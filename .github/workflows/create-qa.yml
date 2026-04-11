@@ -1,0 +1,31 @@
+name: Create QA Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      dev_branch:
+        description: "Developer branch name (e.g. dev/feature-login)"
+        required: true
+
+jobs:
+  create-qa-branch:
+    name: Create QA Branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create QA branch
+        run: |
+          DEV_BRANCH="${{ github.event.inputs.dev_branch }}"
+          QA_BRANCH="${DEV_BRANCH/dev/qa}"
+          git fetch origin $DEV_BRANCH
+          git checkout -b $QA_BRANCH origin/$DEV_BRANCH
+          git push origin $QA_BRANCH

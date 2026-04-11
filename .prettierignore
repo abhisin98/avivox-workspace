@@ -1,0 +1,14 @@
+#files
+.gitignore
+.prettierignore
+.vscodeignore
+.env
+.npmrc
+.nvmrc
+.cache*
+*.json
+*.md
+*.log
+*.yaml
+*.tsbuildinfo
+*.toml

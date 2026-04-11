@@ -1,0 +1,36 @@
+name: Create Beta Release PR
+
+env:
+  # Environment Variables:
+  # - Used to configure settings such as database connections and API keys.
+  # - It's best to store sensitive values in GitHub Secrets for security.
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      qa_branch:
+        description: "QA branch name (e.g. qa/feature-login)"
+        required: true
+
+jobs:
+  create-beta-pr:
+    name: Create Beta PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request into main
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
+          base: main
+          branch: ${{ github.event.inputs.qa_branch }}
+          title: "Beta Release: ${{ github.event.inputs.qa_branch }}"
+          body: |
+            This PR was auto-generated to promote **${{ github.event.inputs.qa_branch }}** into `main`.
+            Once merged, it will trigger the Beta → Production workflows.

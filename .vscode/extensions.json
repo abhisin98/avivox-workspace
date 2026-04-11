@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "aaron-bond.better-comments",
+    "firsttris.vscode-jest-runner",
+    "wix.vscode-import-cost",
+    "christian-kohler.path-intellisense"
+  ]
+}

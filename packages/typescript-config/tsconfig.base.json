@@ -1,0 +1,155 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "display": "Default",
+    "compilerOptions": {
+        // 🔍 Type Checking
+        "allowUnreachableCode": false, // Allow unreachable code — Default: undefined (warn), true ignores, false errors
+        "allowUnusedLabels": false, // Allow unused labels — Default: undefined (warn), true ignores, false errors
+        // "alwaysStrict": true, // Ensures strict mode parsing and emits "use strict" — Recommended: true; Default: true if strict; Related: strict
+        "exactOptionalPropertyTypes": false, // Enforce exact semantics for optional properties — Recommended
+        "noFallthroughCasesInSwitch": true, // Report errors for fallthrough cases in switch
+        // "noImplicitAny": true, // Disallow implicit any types — Recommended: true; Default: true if strict; Related: strict
+        "noImplicitOverride": true, // Require 'override' keyword for overrides
+        "noImplicitReturns": true, // Ensure all code paths in a function return
+        // "noImplicitThis": true, // Disallow 'this' with implicit any — Recommended: true; Default: true if strict; Related: strict
+        "noPropertyAccessFromIndexSignature": false, // Require indexed access for index-signature properties
+        "noUncheckedIndexedAccess": true, // Add undefined to indexed access types
+        "noUnusedLocals": true, // Report errors on unused locals
+        "noUnusedParameters": true, // Report errors on unused parameters
+        "strict": true, // Enable all strict type-checking options — Recommended; Related: alwaysStrict, noImplicitAny, strictNullChecks, strictBindCallApply, strictBuiltinIteratorReturn, strictFunctionTypes, strictPropertyInitialization, noImplicitThis, useUnknownInCatchVariables
+        // "strictBindCallApply": true, // Check bind/call/apply arguments — Recommended: true if strict; Related: strict
+        // "strictBuiltinIteratorReturn": true, // Built-in iterators return undefined instead of any — Recommended: true if strict; Related: strict
+        // "strictFunctionTypes": true, // Stricter function parameter checks — Recommended: true if strict; Related: strict
+        // "strictNullChecks": true, // Null/undefined are distinct types — Recommended: true if strict; Related: strict
+        // "strictPropertyInitialization": true, // Require definite assignment for class properties — Recommended: true if strict; Related: strict
+        // "useUnknownInCatchVariables": true, // Catch variables typed as unknown — Recommended: true if strict; Related: strict
+        
+        // // 📦 Modules
+        // "allowArbitraryExtensions": false, // Allow arbitrary import extensions
+        "allowImportingTsExtensions": true, // Allow importing .ts/.tsx/.mts/.cts — Default: true if rewriteRelativeImportExtensions
+        // "allowUmdGlobalAccess": false, // Allow global access to UMD modules
+        // "baseUrl": ".", // Base directory for non-relative imports
+        // "customConditions": [], // Additional conditions for package.json exports/imports — Related: moduleResolution, resolvePackageJsonExports, resolvePackageJsonImports
+        // "module": "nodenext", // Module system — Related: moduleResolution, esModuleInterop, allowImportingTsExtensions, allowArbitraryExtensions, resolveJsonModule
+        // "moduleResolution": "nodenext", // Module resolution strategy — Related: module, paths, baseUrl, rootDirs, moduleSuffixes, customConditions, resolvePackageJsonExports, resolvePackageJsonImports
+        // "moduleSuffixes": [
+        //     ""
+        // ], // File suffixes to try when resolving modules
+        // "noResolve": false, // Disable automatic module resolution
+        // "noUncheckedSideEffectImports": false, // Error on unresolved side-effect-only imports
+        // "paths": {}, // Path mapping for imports
+        "resolveJsonModule": true, // Allow importing .json modules
+        // "resolvePackageJsonExports": true, // Consult package.json exports — Related: moduleResolution, customConditions, resolvePackageJsonImports
+        // "resolvePackageJsonImports": true, // Consult package.json imports — Related: moduleResolution, customConditions, resolvePackageJsonExports
+        "rewriteRelativeImportExtensions": true, // Rewrite TS extensions in relative imports
+        // "rootDir": "src", // Root directory of input files
+        // "rootDirs": [
+        //     "src"
+        // ], // Virtual root directories
+        // "typeRoots": [
+        //     "./node_modules/@types"
+        // ], // Directories to search for type definitions — Related: types
+        // "types": [], // Specific type packages to include — Related: typeRoots
+        
+        // // 📤 Emit
+        // "declaration": true, // Emit .d.ts files — Related: declarationDir, emitDeclarationOnly
+        // "declarationDir": "./types", // Output directory for .d.ts — Related: declaration
+        // "declarationMap": true, // Emit source maps for .d.ts
+        // "downlevelIteration": true, // Accurate ES5 iteration — Related: importHelpers
+        // "emitBOM": false, // Emit byte order mark
+        // "emitDeclarationOnly": false, // Emit only .d.ts files — Related: declaration
+        // "importHelpers": true, // Use tslib helpers — Related: noEmitHelpers, downlevelIteration
+        // "inlineSourceMap": false, // Inline source maps (instead of separate files)
+        // "inlineSources": false, // Embed original source in source maps
+        // "mapRoot": "", // Root for source map locations
+        // "newLine": "lf", // End of line sequence: crlf or lf
+        // "noEmit": false, // Do not emit output files
+        // "noEmitHelpers": false, // Do not emit helper functions — Related: importHelpers
+        // "noEmitOnError": true, // Skip emit on errors
+        // "outDir": "./dist", // Output directory
+        // "outFile": undefined, // Concatenate output to single file
+        // "preserveConstEnums": true, // Do not erase const enums
+        // "removeComments": false, // Remove comments from output
+        // "sourceMap": true, // Generate source maps
+        // "sourceRoot": "", // Root for debugging sources
+        // "stripInternal": false, // Remove declarations marked @internal
+        
+        // // 📜 JavaScript Support
+        // "allowJs": false, // Allow JavaScript files
+        // "checkJs": false, // Type-check JavaScript files
+        // "maxNodeModuleJsDepth": 0, // Depth for JS type-checking in node_modules
+        
+        // // 🧑‍💻 Editor Support
+        // "disableSizeLimit": false, // Disable IntelliSense size limit
+        // "plugins": [], // Editor plugins
+
+        // // 🔄 Interop Constraints
+        // "allowSyntheticDefaultImports": true, // Allow default imports from modules without default export
+        // "erasableSyntaxOnly": false, // Only erase types from erasable syntax
+        "esModuleInterop": true, // Emit helpers for CommonJS interop
+        "forceConsistentCasingInFileNames": true, // Enforce consistent casing in imports
+        // "isolatedDeclarations": false, // Ensure each file can be transpiled in isolation
+        "isolatedModules": true, // Treat each file as a separate module
+        // "preserveSymlinks": false, // Do not resolve symlinks
+        // "verbatimModuleSyntax": true, // Preserve import/export syntax
+        
+        // // 🕰️ Backwards Compatibility
+        // "charset": "utf8", // Character encoding
+        // "importsNotUsedAsValues": "remove", // Drop unused imports
+        // "keyofStringsOnly": false, // keyof works on non-strings
+        // "noImplicitUseStrict": false, // Do not add "use strict"
+        // "noStrictGenericChecks": false, // Disable strict generic checks
+        // "out": undefined, // Legacy output file
+        // "preserveValueImports": true, // Preserve value imports
+        // "suppressExcessPropertyErrors": false, // Do not suppress excess property errors
+        // "suppressImplicitAnyIndexErrors": false, // Do not suppress implicit any index errors
+        
+        // // 🌐 Language and Environment
+        // "emitDecoratorMetadata": false, // Emit metadata for decorators
+        // "experimentalDecorators": false, // Enable experimental decorators
+        // "jsx": "react-jsx", // JSX mode
+        // "jsxFactory": "React.createElement", // JSX factory
+        // "jsxFragmentFactory": "React.Fragment", // JSX fragment factory
+        // "jsxImportSource": "react", // JSX import source
+        // "lib": [
+        //     "ES2022",
+        //     "DOM"
+        // ], // Included library files
+        // "libReplacement": {}, // Replace default libs
+        // "moduleDetection": "auto", // Auto-detect module type
+        // "noLib": false, // Include default library files
+        // "reactNamespace": "React", // React namespace
+        // "target": "ES2022", // Target ECMAScript version
+        // "useDefineForClassFields": true, // Use define semantics for class fields
+        
+        // // 🧪 Compiler Diagnostics
+        // "diagnostics": false, // Show diagnostic info
+        // "explainFiles": false, // Explain file inclusion
+        // "extendedDiagnostics": false, // Show extended diagnostics
+        // "generateCpuProfile": false, // Generate CPU profile
+        // "generateTrace": false, // Generate trace logs
+        // "listEmittedFiles": false, // List emitted files
+        // "listFiles": false, // List included files
+        // "noCheck": false,
+        
+        // // 🏗️ Projects
+        "composite": false, // Enable project references — Required for references; Related: incremental, declaration
+        // "disableReferencedProjectLoad": false, // Skip loading referenced projects automatically
+        // "disableSolutionSearching": false, // Disable auto-search for solution-style tsconfigs
+        // "disableSourceOfProjectReferenceRedirect": false, // Don’t redirect to source files of referenced projects
+        // "incremental": true, // Enable incremental compilation — Related: tsBuildInfoFile, composite
+        // "tsBuildInfoFile": "./.tsbuildinfo", // Path for incremental build info — Related: incremental
+       
+        // // 🎨 Output Formatting
+        // "noErrorTruncation": false, // Show full error messages instead of truncating
+        // "preserveWatchOutput": true, // Keep watch mode output instead of clearing screen
+        "pretty": true, // Use color and formatting in error messages
+        
+        // // 📚 Completeness
+        // "skipDefaultLibCheck": false, // Skip type checking of default library files
+        "skipLibCheck": true // Skip type checking of all declaration files
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

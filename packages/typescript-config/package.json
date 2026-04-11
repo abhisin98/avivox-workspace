@@ -1,0 +1,12 @@
+{
+  "name": "@avivox-workspace/typescript-config",
+  "version": "0.0.0",
+  "license": "MIT",
+  "files": [
+    "native.json",
+    "nextjs.json",
+    "node.json",
+    "react.json",
+    "tsconfig.base.json"
+  ]
+}

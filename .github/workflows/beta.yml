@@ -1,0 +1,232 @@
+name: Beta Deployment
+
+env:
+  # Environment Variables:
+  # - Used to configure settings such as database connections and API keys.
+  # - It's best to store sensitive values in GitHub Secrets for security.
+  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }} # get this in account settings "https://railway.com/account/tokens" (make sure this is NOT a project token), and scope it to your account (not a workspace)
+  RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }} # project ID
+  RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }} # railway environment to duplicate from
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v4
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Run CI Action
+        uses: ./.github/actions/ci
+
+  deploy-web:
+    name: Deploy Web (Beta)
+    needs: ci
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v4
+
+      # - name: Setup # Executes setup scripts for dependencies.
+      #   uses: ./.github/actions/setup
+
+      - name: Link to Project
+        run: railway link --project ${{ env.RAILWAY_PROJECT_ID }} --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} --service web # --team ${{ env.RAILWAY_TEAM_ID }} # uncomment this if you are linking to a team project
+
+      - name: Extract PR metadata And Create Environment Name
+        id: pr_meta
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          SHA=${{ github.sha }}
+          beta_environment="web-beta.${PR_NUMBER}.${SHA:0:7}"
+
+          echo "environment=${beta_environment}" >> $GITHUB_OUTPUT
+
+      - name: Create Railway Environment
+        run: |
+          service_variable=""
+          railway environment new "${{ steps.pr_meta.outputs.environment }}" --copy ${{ env.RAILWAY_ENVIRONMENT_ID }} --service-variable web "${service_variable}"
+
+      - name: Deploy (Staging)
+        id: deploy
+        run: |
+          railway up --environment "${{ steps.pr_meta.outputs.environment }}" --service web
+          OUTPUT=$(railway domain --environment "${{ steps.pr_meta.outputs.environment }}" --service web)
+          URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
+          echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Deployment Info
+        run: |
+          echo "Preview deployed at: ${{ steps.deploy.outputs.url }}"
+
+      - name: Post or update deployment comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- comment -->'; // Unique marker to identify the comment
+            const deployUrl = "${{ steps.deploy.outputs.url }}";
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const body = `
+              ${marker}
+              🚀 **Deployment success!**
+              
+              - \`web\` deployed at [${deployUrl}](${deployUrl})
+
+              ---
+
+              *Built from commit: ${context.sha.substring(0, 7)}*
+            `;
+
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existingComment = comments.find(c => c.body.includes(marker));
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existingComment.id, body });
+              core.info(`Updated comment ID: ${existingComment.id}`);
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+              core.info('Created a new comment');
+            }
+
+  publish-packages:
+    name: Publish Packages (Beta)
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for git-cliff
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Configure npm
+        run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
+
+      - name: Publish package and comment on PR # Publish Packages (Staging) with tag beta
+        run: |
+          set -euo pipefail
+
+          # Save repo root for navigation
+          repo_root="$(pwd)"
+
+          # Find all package.json files, excluding node_modules
+          mapfile -t package_files < <(find . -path "./node_modules" -prune -o -name "package.json" -print)
+
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          SHA=${{ github.sha }}
+          REPO=${{ github.repository }}
+
+          changelog=""
+          declare -a published_versions
+
+          for pkg_path in "${package_files[@]}"; do
+            pkg_dir="$(dirname "$pkg_path")"
+            cd "$pkg_dir" || continue
+
+            echo "📦 Processing $pkg_path"
+
+            # Get package name for git-cliff tag pattern
+            pkg_name=$(jq -r '.name' package.json)
+
+            # Check if any tags exist for this package
+            if git tag --list "${pkg_name}@*" | head -1 | grep -q .; then
+              # Tags exist, use tag pattern
+              bump_output=$(git-cliff --tag-pattern "${pkg_name}@*" --bump -o CHANGELOG.md 2>&1)
+              raw_version=$(git-cliff --tag-pattern "${pkg_name}@*" --bumped-version | tr -d '\r\n')
+            else
+              # First run, no tags yet, run without tag pattern
+              bump_output=$(git-cliff --bump -o CHANGELOG.md 2>&1)
+              raw_version=$(git-cliff --bumped-version | tr -d '\r\n')
+            fi
+            echo "$bump_output"
+
+            version="${raw_version##*@}"
+
+            # Only proceed if version actually changed
+            current_version=$(jq -r '.version' package.json)
+            if [ -n "$version" ] && [ "$version" != "$current_version" ]; then
+              echo "⬆️  Bump detected for $pkg_name: $current_version -> $version"
+
+              beta_version="${version}-beta.${PR_NUMBER}.${SHA:0:7}"
+
+              # Update package.json version safely
+              tmpfile="$(mktemp)"
+              jq ".version = \"$beta_version\"" package.json > "$tmpfile" && mv "$tmpfile" package.json
+
+              # Publish if not private
+              is_private=$(jq -r '.private // false' package.json)
+              if [ "$is_private" != "true" ]; then
+                echo "📤 Publishing $pkg_name@$beta_version"
+                pnpm publish --access public --tag beta --no-git-checks
+                published_versions+=("$pkg_name@$beta_version")
+              else
+                echo "🚫 Skipping private package $pkg_name"
+              fi
+
+              # Generate changelog snippet
+              changelog+=$'# $pkg_name\n'
+              changelog+="$(git-cliff --unreleased)\n\n"
+            else
+              echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
+            fi
+
+            # Return to repo root
+            cd "$repo_root"
+          done
+
+          if [ ${#published_versions[@]} -gt 0 ]; then
+            comment="## Beta Release
+
+            ### Published Versions:
+            $(printf ' - %s\n' "${published_versions[@]}")
+            
+            ### Installation:
+            \`\`\`bash
+            # Install any of the published versions individually
+            $(printf 'pnpm add %s  # or npm install\n' "${published_versions[@]}")
+
+            # Or install all at once
+            pnpm add ${published_versions[*]}  # or npm install
+            \`\`\`
+            
+            ### Changelog Highlights:
+            $changelog"
+
+            # Check for existing bot comment
+            existing_comment_id=$(gh api repos/$REPO/issues/$PR_NUMBER/comments --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("## Beta Release"))) | .id' | head -1)
+
+            if [ -n "$existing_comment_id" ]; then
+              echo "📝 Updating existing comment"
+              gh api -X PATCH repos/$REPO/issues/comments/$existing_comment_id -f body="$comment"
+            else
+              echo "💬 Posting new comment"
+              gh pr comment $PR_NUMBER --body "$comment"
+            fi
+          else
+            echo "ℹ️  No packages to publish"
+          fi

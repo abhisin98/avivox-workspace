@@ -1,0 +1,34 @@
+name: Rollback Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_id:
+        description: "Deployment ID to rollback"
+        required: true
+      npm_version:
+        description: "NPM version to rollback (optional)"
+        required: false
+
+jobs:
+  rollback-web:
+    name: Rollback Web
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.deploy_id != '' }}
+    steps:
+      - name: Redeploy Web build
+        # run: railway redeploy --id ${{ github.event.inputs.deploy_id }}
+        run: echo "redeploy --id ${{ github.event.inputs.deploy_id }}"
+
+  rollback-packages:
+    name: Rollback packages
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.npm_version != '' }}
+    steps:
+      - name: Re-publish npm version
+        # run: |
+        #   pnpm version ${{ github.event.inputs.npm_version }}
+        #   pnpm publish --tag latest --no-git-checks
+        run: |
+          echo version ${{ github.event.inputs.npm_version }}
+          echo publish --tag latest --no-git-checks

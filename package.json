@@ -1,0 +1,58 @@
+{
+  "name": "avivox-workspace",
+  "version": "0.0.0",
+  "author": "https://github.com/abhisin98",
+  "private": true,
+  "type": "module",
+  "repository": "https://github.com/abhisin98/avivox-workspace",
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@10.26.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build --concurrency 1 --continue",
+    "build:packages": "turbo build --filter=@avivox-workspace/*",
+    "lint": "turbo lint",
+    "lint:packages": "turbo lint --filter=@avivox-workspace/*",
+    "lint:all": "eslint .",
+    "type-check": "turbo type-check",
+    "type-check:packages": "turbo type-check --filter=@avivox-workspace/*",
+    "test": "turbo test --concurrency 1 --continue",
+    "test:packages": "turbo test --concurrency 1 --continue --filter=@avivox-workspace/*",
+    "test:all": "jest",
+    "clean": "rimraf -v --glob \"./{apps,packages}/**/{.turbo,.next,build,__generated__}\"",
+    "clean:all": "rimraf -v --glob \"./**/{node_modules,.turbo,.next,build,__generated__}\"",
+    "start": "turbo start",
+    "format": "prettier --write \"**/*.*\" --config .prettierrc.json  --ignore-path .gitignore --ignore-path .prettierignore",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@avivox-workspace/eslint-config": "workspace:^",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@eslint/compat": "^2.0.0",
+    "@microsoft/api-extractor": "^7.56.3",
+    "@rslib/core": "latest",
+    "@swc/core": "latest",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^29.5.14",
+    "@types/node": "25.0.2",
+    "cross-env": "latest",
+    "dotenv": "latest",
+    "dotenv-cli": "latest",
+    "eslint": "9.39.2",
+    "husky": "^9.1.7",
+    "jest": "~29.7.0",
+    "prettier": "^3.7.4",
+    "rimraf": "^6.1.2",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "turbo": "latest",
+    "typescript": "5.9.2"
+  }
+}

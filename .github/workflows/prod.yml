@@ -1,0 +1,180 @@
+name: Production Deployment
+
+env:
+  # Environment Variables:
+  # - Used to configure settings such as database connections and API keys.
+  # - It's best to store sensitive values in GitHub Secrets for security.
+  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }} # get this in account settings "https://railway.com/account/tokens" (make sure this is NOT a project token), and scope it to your account (not a workspace)
+  RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }} # project ID
+  RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }} # railway environment to duplicate from
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v4
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Run CI Action
+        uses: ./.github/actions/ci
+
+  deploy-web:
+    name: Deploy Web (Prod)
+    needs: ci
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    environment:
+      name: Web
+      url: ${{ env.DEPLOY_URL }} # Stores the deployment URL dynamically
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v4
+
+      # - name: Setup # Executes setup scripts for dependencies.
+      #   uses: ./.github/actions/setup
+
+      - name: Link to Project
+        run: railway link --project ${{ env.RAILWAY_PROJECT_ID }} --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} --service web # --team ${{ env.RAILWAY_TEAM_ID }} # uncomment this if you are linking to a team project
+
+      - name: Deploy (Production)
+        id: deploy
+        run: |
+          railway up --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} --service web
+          OUTPUT=$(railway domain --service web)
+          URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
+          echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Deployment Info
+        run: |
+          echo "Deployed at: ${{ steps.deploy.outputs.url }}"
+
+  publish-packages:
+    name: Publish Packages (Prod)
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for git-cliff
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Configure npm
+        run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
+
+      - name: Update package versions, generate changelogs, and publish to Npm # Publish Packages (Production) with tag latest
+        run: |
+          set -euo pipefail
+
+          # Save repo root for navigation
+          repo_root="$(pwd)"
+
+          # Find all package.json files, excluding node_modules
+          mapfile -t package_files < <(find . -path "./node_modules" -prune -o -name "package.json" -print)
+
+          changed_any=false
+          declare -a tags_to_create
+
+          for pkg_path in "${package_files[@]}"; do
+            pkg_dir="$(dirname "$pkg_path")"
+            cd "$pkg_dir" || continue
+
+            echo "📦 Processing $pkg_path"
+
+            # Get package name for git-cliff tag pattern
+            pkg_name=$(jq -r '.name' package.json)
+
+            # Check if any tags exist for this package
+            if git tag --list "${pkg_name}@*" | head -1 | grep -q .; then
+              # Tags exist, use tag pattern
+              bump_output=$(git-cliff --tag-pattern "${pkg_name}@*" --bump -o CHANGELOG.md 2>&1)
+              raw_version=$(git-cliff --tag-pattern "${pkg_name}@*" --bumped-version | tr -d '\r\n')
+            else
+              # First run, no tags yet, run without tag pattern
+              bump_output=$(git-cliff --bump -o CHANGELOG.md 2>&1)
+              raw_version=$(git-cliff --bumped-version | tr -d '\r\n')
+            fi
+            echo "$bump_output"
+
+            version="${raw_version##*@}"
+
+            # Only proceed if version actually changed
+            current_version=$(jq -r '.version' package.json)
+            if [ -n "$version" ] && [ "$version" != "$current_version" ]; then
+              echo "⬆️  Bump detected for $pkg_name: $current_version -> $version"
+              
+              # Update package.json version safely
+              tmpfile="$(mktemp)"
+              jq ".version = \"$version\"" package.json > "$tmpfile" && mv "$tmpfile" package.json
+
+              # Publish if not private
+              is_private=$(jq -r '.private // false' package.json)
+              if [ "$is_private" != "true" ]; then
+                echo "📤 Publishing $pkg_name@$version"
+                pnpm publish --access public --tag latest --no-git-checks
+              else
+                echo "🚫 Skipping private package $pkg_name"
+              fi
+
+              # Stage changes for commit
+              git add package.json CHANGELOG.md
+              tags_to_create+=("${pkg_name}@${version}")
+              changed_any=true
+
+            else
+              echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
+            fi
+
+            # Return to repo root
+            cd "$repo_root"
+          done
+
+          # Commit and push changes if any packages were updated
+          if [ "$changed_any" = true ]; then
+            echo "💾 Committing version updates"
+
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(release): bump versions [skip ci]
+
+            * 🎯 update package.json and CHANGELOG.md
+            * 💡 publish non-private packages to npm with tag latest
+            * 🔧 generate tags for bumped versions
+            
+            WHY: automate release process for consistency and traceability
+            "
+            
+            # Create tags safely
+            for tag in "${tags_to_create[@]}"; do
+              if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
+                echo "🏷️  Tag already exists, skipping: $tag"
+              else
+                git tag "$tag"
+                echo "🏷️  Created tag: $tag"
+              fi
+            done
+
+            git push
+            git push --tags
+            echo "✅ Release complete!"
+          else
+            echo "ℹ️  No changes detected across any packages"
+          fi
