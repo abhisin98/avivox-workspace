@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup # Executes setup scripts for dependencies.
         uses: ./.github/actions/setup
@@ -35,7 +35,7 @@ jobs:
     container: ghcr.io/railwayapp/cli:latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # - name: Setup # Executes setup scripts for dependencies.
       #   uses: ./.github/actions/setup
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Fetch full history for git-cliff
 

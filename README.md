@@ -28,8 +28,8 @@ Built with modern tools including Turborepo for build orchestration, pnpm for pa
 
 ### Prerequisites
 
-- Node.js >= 18
-- pnpm >= 8.15
+- Node.js >= 24
+- pnpm >= 10.33
 
 ### Installation
 

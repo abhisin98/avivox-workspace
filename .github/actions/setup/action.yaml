@@ -4,18 +4,18 @@ description: "Prepare and install all dependencies for the monorepo setup (Pnpm,
 inputs:
   node-version:
     description: Version of Node to use
-    default: 22
+    default: 24
 
 runs:
   using: "composite"
   steps:
     - name: 🏗 Setup Pnpm
-      uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@v6
       with:
         run_install: false
 
     - name: 🏗 Setup Node.js environment
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
         cache: "pnpm"
@@ -29,7 +29,7 @@ runs:
       shell: bash
 
     - name: ♻️ Restore cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         key: turbo-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
         restore-keys: |
