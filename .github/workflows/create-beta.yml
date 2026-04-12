@@ -12,6 +12,8 @@ on:
       qa_branch:
         description: "QA branch name (e.g. qa/feature-login)"
         required: true
+        type: string
+        pattern: "^qa/[a-zA-Z0-9._-]+$"
 
 jobs:
   create-beta-pr:
@@ -23,6 +25,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Fetch QA branch
+        run: git fetch origin ${{ github.event.inputs.qa_branch }}
 
       - name: Create Pull Request into main
         uses: peter-evans/create-pull-request@v8
@@ -34,3 +41,4 @@ jobs:
           body: |
             This PR was auto-generated to promote **${{ github.event.inputs.qa_branch }}** into `main`.
             Once merged, it will trigger the Beta → Production workflows.
+          labels: beta-release

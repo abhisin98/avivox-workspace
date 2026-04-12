@@ -4,8 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       dev_branch:
-        description: "Developer branch name (e.g. dev/feature-login)"
+        description: "Developer branch name (e.g., dev/feature-login)"
         required: true
+        type: string
+        pattern: "^dev/[a-zA-Z0-9._-]+$"
 
 jobs:
   create-qa-branch:
@@ -16,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # important: fetch full history
 
       - name: Configure Git
         run: |
@@ -26,6 +30,15 @@ jobs:
         run: |
           DEV_BRANCH="${{ github.event.inputs.dev_branch }}"
           QA_BRANCH="${DEV_BRANCH/dev/qa}"
+
+          # Make sure we have the latest commits from origin
           git fetch origin $DEV_BRANCH
-          git checkout -b $QA_BRANCH origin/$DEV_BRANCH
+
+          # Checkout the latest commit of the dev branch
+          git checkout origin/$DEV_BRANCH
+
+          # Create QA branch at that commit
+          git switch -c $QA_BRANCH
+
+          # Push QA branch to origin
           git push origin $QA_BRANCH
