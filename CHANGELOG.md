@@ -3,11 +3,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [avivox-workspace@1.0.2](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.1..avivox-workspace@1.0.2) - 2026-04-12
+
+### Continuous Integration
+
+- enhance qa and beta workflows - ([5326582](https://github.com/abhisin98/avivox-workspace/commit/5326582b19d73e945ad0de1c1e093a8d0f6ad27a)) - abhisin98
+
+---
 ## [avivox-workspace@1.0.1](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.0..avivox-workspace@1.0.1) - 2026-04-11
 
 ### Miscellaneous Chores
 
 - **(deps)** add unrs-resolver to onlybuiitdependencies - ([efe5d89](https://github.com/abhisin98/avivox-workspace/commit/efe5d894a1c9a6fe8b8ddd3fb88f83fa6a11c8f7)) - abhisin98
+- **(release)** bump versions [skip ci] - ([ac5a76d](https://github.com/abhisin98/avivox-workspace/commit/ac5a76da1ad0a59bae0efee83e62999e3b037cf4)) - github-actions[bot]
 
 ---
 ## [avivox-workspace@1.0.0] - 2026-04-11
