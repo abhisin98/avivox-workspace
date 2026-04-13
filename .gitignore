@@ -1,4 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# git diff --cached > staged-changes.txt
+staged-changes.txt
 
 # Dependencies
 node_modules

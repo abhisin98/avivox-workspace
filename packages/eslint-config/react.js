@@ -5,17 +5,14 @@ module.exports = defineConfig([
   universeConfig,
   {
     rules: {
+      // Keep Prettier formatting consistent
       "prettier/prettier": ["error", { endOfLine: "auto" }],
+
+      // Prevent unused variables clutter (ignore args starting with "_")
+      "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+
+      // Simple feature rule for PR testing: enforce strict equality
+      eqeqeq: ["error", "always"],
     },
   },
 ]);
-
-// module.exports = {
-//   // --------------------------------------------------------------------
-//   extends: ["eslint-config-universe/shared/core.js", "eslint-config-universe/shared/typescript.js", "eslint-config-universe/shared/react.js", "eslint-config-universe/shared/prettier.js"],
-//   env: { browser: true, commonjs: true },
-//   // do some additional things with it
-//   rules: {
-//     "prettier/prettier": ["error", { endOfLine: "auto" }],
-//   },
-// };
