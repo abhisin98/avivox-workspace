@@ -3,11 +3,22 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [avivox-workspace@1.1.1](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.0..avivox-workspace@1.1.1) - 2026-04-13
+
+### Continuous Integration
+
+- add beta cleanup workflow and improve metadata handling - ([f77b62f](https://github.com/abhisin98/avivox-workspace/commit/f77b62fb4470ffa182b986d593b3576e88241b03)) - abhisin98
+
+---
 ## [avivox-workspace@1.1.0](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.5..avivox-workspace@1.1.0) - 2026-04-13
 
 ### Features
 
 - **(eslint-config)** add prettier, no-unused-vars, and eqeqeq rules - ([153c065](https://github.com/abhisin98/avivox-workspace/commit/153c0657a7bc514a43b767ac4d05b0d87bfbe83c)) - abhisin98
+
+### Miscellaneous Chores
+
+- **(release)** bump versions [skip ci] - ([8050d21](https://github.com/abhisin98/avivox-workspace/commit/8050d21802440fceda03b42164c44c29c035ff07)) - github-actions[bot]
 
 ---
 ## [avivox-workspace@1.0.5](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.4..avivox-workspace@1.0.5) - 2026-04-13
