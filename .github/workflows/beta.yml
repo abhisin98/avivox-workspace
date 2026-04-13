@@ -14,6 +14,9 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - synchronize
 
 jobs:
   ci:
@@ -52,7 +55,7 @@ jobs:
         id: pr_meta
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          SHA=${{ github.sha }}
+          SHA=${{ github.event.pull_request.head.sha }}
           beta_environment="web-beta.${PR_NUMBER}.${SHA:0:7}"
 
           echo "environment=${beta_environment}" >> $GITHUB_OUTPUT
@@ -91,7 +94,8 @@ jobs:
 
               ---
 
-              *Built from commit: ${context.sha.substring(0, 7)}*
+              *PR commit (head): [${context.payload.pull_request.head.sha.substring(0,7)}](https://github.com/${owner}/${repo}/commit/${context.payload.pull_request.head.sha})*
+              *Tested merge commit: [${context.sha.substring(0,7)}](https://github.com/${owner}/${repo}/commit/${context.sha})*
             `;
 
             const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
@@ -138,7 +142,8 @@ jobs:
           mapfile -t package_files < <(find . -path "./node_modules" -prune -o -name "package.json" -print)
 
           PR_NUMBER=${{ github.event.pull_request.number }}
-          SHA=${{ github.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          MERGE_SHA=${{ github.sha }}
           REPO=${{ github.repository }}
 
           changelog=""
@@ -172,7 +177,7 @@ jobs:
             if [ -n "$version" ] && [ "$version" != "$current_version" ]; then
               echo "⬆️  Bump detected for $pkg_name: $current_version -> $version"
 
-              beta_version="${version}-beta.${PR_NUMBER}.${SHA:0:7}"
+              beta_version="${version}-beta.${PR_NUMBER}.${HEAD_SHA:0:7}.${MERGE_SHA:0:7}"
 
               # Update package.json version safely
               tmpfile="$(mktemp)"
@@ -213,6 +218,10 @@ jobs:
             # Or install all at once
             pnpm add ${published_versions[*]}  # or npm install
             \`\`\`
+
+            ### Commit Info:
+            - PR commit (head): [${HEAD_SHA:0:7}](https://github.com/${REPO}/commit/${HEAD_SHA})
+            - Tested merge commit: [${MERGE_SHA:0:7}](https://github.com/${REPO}/commit/${MERGE_SHA})
             
             ### Changelog Highlights:
             $changelog"

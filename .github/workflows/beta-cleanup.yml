@@ -1,0 +1,147 @@
+name: Beta Cleanup
+
+env:
+  # Environment Variables:
+  # - Used to configure settings such as database connections and API keys.
+  # - It's best to store sensitive values in GitHub Secrets for security.
+  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }} # get this in account settings "https://railway.com/account/tokens" (make sure this is NOT a project token), and scope it to your account (not a workspace)
+  RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }} # project ID
+  RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }} # railway environment to duplicate from
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  cleanup-web:
+    name: Cleanup Web (Beta)
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      # - name: Setup # Executes setup scripts for dependencies.
+      #   uses: ./.github/actions/setup
+
+      - name: Link to Project
+        run: railway link --project ${{ env.RAILWAY_PROJECT_ID }} --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} --service web # --team ${{ env.RAILWAY_TEAM_ID }} # uncomment this if you are linking to a team project
+
+      - name: Extract PR metadata
+        id: pr_meta
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          SHA=${{ github.event.pull_request.head.sha }}
+          beta_environment="web-beta.${PR_NUMBER}.${SHA:0:7}"
+
+          echo "environment=${beta_environment}" >> $GITHUB_OUTPUT
+
+      - name: Delete Railway Environment
+        run: |
+          railway environment delete "${{ steps.pr_meta.outputs.environment }}" --yes || true
+
+      - name: Remove deployment comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- comment -->'; // same marker used in deployment workflow
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existingComment = comments.find(c => c.body.includes(marker));
+
+            if (existingComment) {
+              await github.rest.issues.deleteComment({ owner, repo, comment_id: existingComment.id });
+              core.info(`Deleted deployment comment ID: ${existingComment.id}`);
+            } else {
+              core.info('No deployment comment found to delete');
+            }
+
+      - name: Post cleanup confirmation
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🧹 **Preview environment \`${{ steps.pr_meta.outputs.environment }}\` deleted for PR #${context.issue.number}. Deployment comment removed.**`
+            });
+
+  # cleanup-packages:
+  #   name: Cleanup Packages (Beta)
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     pull-requests: write
+  #   steps:
+  #     - name: Checkout repo
+  #       uses: actions/checkout@v6
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: Setup
+  #       uses: ./.github/actions/setup
+
+  #     - name: Configure npm
+  #       run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
+
+  #     - name: Unpublish beta packages
+  #       run: |
+  #         set -euo pipefail
+
+  #         # Save repo root for navigation
+  #         repo_root="$(pwd)"
+
+  #         # Find all package.json files, excluding node_modules
+  #         mapfile -t package_files < <(find . -path "./node_modules" -prune -o -name "package.json" -print)
+
+  #         PR_NUMBER=${{ github.event.pull_request.number }}
+  #         HEAD_SHA=${{ github.event.pull_request.head.sha }}
+  #         MERGE_SHA=${{ github.sha }}
+  #         REPO=${{ github.repository }}
+
+  #         for pkg_path in "${package_files[@]}"; do
+  #           pkg_dir="$(dirname "$pkg_path")"
+  #           cd "$pkg_dir" || continue
+
+  #           echo "📦 Processing $pkg_path"
+
+  #           # Get package name for git-cliff tag pattern
+  #           pkg_name=$(jq -r '.name' package.json)
+
+  #           # TODO: This section is incomplete and will be implemented in the future.
+  #           version=""
+
+  #           # Only proceed if version actually changed
+  #           current_version=$(jq -r '.version' package.json)
+  #           if [ -n "$version" ] && [ "$version" != "$current_version" ]; then
+  #             echo "⬆️  Bump detected for $pkg_name: $current_version -> $version"
+
+  #             beta_version="${version}-beta.${PR_NUMBER}.${HEAD_SHA:0:7}.${MERGE_SHA:0:7}"
+
+  #             # Publish if not private
+  #             is_private=$(jq -r '.private // false' package.json)
+  #             if [ "$is_private" != "true" ]; then
+  #               echo "🗑️ Unpublishing $pkg_name@$beta_version"
+  #               pnpm unpublish "$pkg_name@$beta_version" --force
+  #             else
+  #               echo "🚫 Skipping private package $pkg_name"
+  #             fi
+  #           else
+  #             echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
+  #           fi
+
+  #           # Return to repo root
+  #           cd "$repo_root"
+  #         done
