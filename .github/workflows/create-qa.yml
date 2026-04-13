@@ -26,6 +26,23 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Validate dev branch exists
+        run: |
+          DEV_BRANCH="${{ github.event.inputs.dev_branch }}"
+          if ! git ls-remote --exit-code origin $DEV_BRANCH; then
+            echo "Error: Developer branch $DEV_BRANCH does not exist on origin."
+            exit 1
+          fi
+
+      - name: Validate QA branch does not already exist
+        run: |
+          DEV_BRANCH="${{ github.event.inputs.dev_branch }}"
+          QA_BRANCH="${DEV_BRANCH/dev/qa}"
+          if git ls-remote --exit-code origin $QA_BRANCH; then
+            echo "Error: QA branch $QA_BRANCH already exists on origin."
+            exit 1
+          fi
+
       - name: Create QA branch
         run: |
           DEV_BRANCH="${{ github.event.inputs.dev_branch }}"

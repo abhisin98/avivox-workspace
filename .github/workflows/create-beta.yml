@@ -28,8 +28,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch QA branch
-        run: git fetch origin ${{ github.event.inputs.qa_branch }}
+      - name: Validate QA branch exists
+        run: |
+          QA_BRANCH="${{ github.event.inputs.qa_branch }}"
+          if ! git ls-remote --exit-code origin $QA_BRANCH; then
+            echo "Error: Branch $QA_BRANCH does not exist on origin."
+            exit 1
+          fi
+
+      - name: Validate PR does not already exist
+        run: |
+          QA_BRANCH="${{ github.event.inputs.qa_branch }}"
+          # Query GitHub API for open PRs with this branch as head
+          EXISTING=$(gh pr list --base main --head "$QA_BRANCH" --state open --json number --jq '.[].number')
+          if [ -n "$EXISTING" ]; then
+            echo "Error: A PR from $QA_BRANCH to main already exists (#$EXISTING)."
+            exit 1
+          fi
+
+      - name: Checkout QA branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.qa_branch }}
+          fetch-depth: 0
 
       - name: Create Pull Request into main
         uses: peter-evans/create-pull-request@v8
