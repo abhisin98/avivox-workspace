@@ -36,30 +36,38 @@ jobs:
             exit 1
           fi
 
+      - name: Install GitHub CLI
+        run: sudo apt-get install -y gh
+
+      - name: Authenticate GitHub CLI
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
       - name: Validate PR does not already exist
         run: |
           QA_BRANCH="${{ github.event.inputs.qa_branch }}"
-          # Query GitHub API for open PRs with this branch as head
           EXISTING=$(gh pr list --base main --head "$QA_BRANCH" --state open --json number --jq '.[].number')
           if [ -n "$EXISTING" ]; then
             echo "Error: A PR from $QA_BRANCH to main already exists (#$EXISTING)."
             exit 1
           fi
 
-      - name: Checkout QA branch
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.inputs.qa_branch }}
-          fetch-depth: 0
-
       - name: Create Pull Request into main
-        uses: peter-evans/create-pull-request@v8
-        with:
-          token: ${{ env.GITHUB_TOKEN }}
-          base: main
-          branch: ${{ github.event.inputs.qa_branch }}
-          title: "Beta Release: ${{ github.event.inputs.qa_branch }}"
-          body: |
-            This PR was auto-generated to promote **${{ github.event.inputs.qa_branch }}** into `main`.
-            Once merged, it will trigger the Beta → Production workflows.
-          labels: beta-release
+        run: |
+          QA_BRANCH="${{ github.event.inputs.qa_branch }}"
+          gh pr create \
+            --base main \
+            --head "$QA_BRANCH" \
+            --title "Beta Release: $QA_BRANCH" \
+            --label beta-release \
+            --body "### 📦 Beta Release Promotion
+
+            This pull request was **auto-generated** to promote the QA branch:
+            
+            - **Source Branch:** $QA_BRANCH  
+            - **Target Branch:** \`main\`
+            
+            Once merged, this PR will trigger the **Beta → Production** workflows, ensuring that tested features are safely promoted to the mainline.
+            
+            ---
+            
+            ⚠️ Please review carefully before merging to maintain release integrity."
