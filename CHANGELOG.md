@@ -3,11 +3,22 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [avivox-workspace@1.0.5](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.4..avivox-workspace@1.0.5) - 2026-04-13
+
+### Continuous Integration
+
+- improve beta workflow with repo-specific gh cli usage - ([39a46ee](https://github.com/abhisin98/avivox-workspace/commit/39a46ee75161ae3204c83863eba87002536c251c)) - abhisin98
+
+---
 ## [avivox-workspace@1.0.4](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.3..avivox-workspace@1.0.4) - 2026-04-13
 
 ### Continuous Integration
 
 - switch beta workflow to gh cli for pr creation - ([deecff3](https://github.com/abhisin98/avivox-workspace/commit/deecff368d2c8050a431da232db4477b889c04f4)) - abhisin98
+
+### Miscellaneous Chores
+
+- **(release)** bump versions [skip ci] - ([77cf53c](https://github.com/abhisin98/avivox-workspace/commit/77cf53ce42e5715e822a47ac5c9501995f5e0034)) - github-actions[bot]
 
 ---
 ## [avivox-workspace@1.0.3](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.2..avivox-workspace@1.0.3) - 2026-04-13
