@@ -3,11 +3,22 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [avivox-workspace@1.1.2](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.1..avivox-workspace@1.1.2) - 2026-04-19
+
+### Continuous Integration
+
+- add railway service id support - ([cfcb81d](https://github.com/abhisin98/avivox-workspace/commit/cfcb81d1791a5989cfd8fd72d16bcaedf10111bd)) - abhisin98
+
+---
 ## [avivox-workspace@1.1.1](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.0..avivox-workspace@1.1.1) - 2026-04-13
 
 ### Continuous Integration
 
 - add beta cleanup workflow and improve metadata handling - ([f77b62f](https://github.com/abhisin98/avivox-workspace/commit/f77b62fb4470ffa182b986d593b3576e88241b03)) - abhisin98
+
+### Miscellaneous Chores
+
+- **(release)** bump versions [skip ci] - ([bdf0361](https://github.com/abhisin98/avivox-workspace/commit/bdf0361e17c95f951e0ce9bcd47434bfb515bac9)) - github-actions[bot]
 
 ---
 ## [avivox-workspace@1.1.0](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.5..avivox-workspace@1.1.0) - 2026-04-13
