@@ -7,6 +7,8 @@ env:
   RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }} # get this in account settings "https://railway.com/account/tokens" (make sure this is NOT a project token), and scope it to your account (not a workspace)
   RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }} # project ID
   RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }} # railway environment to duplicate from
+  RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }} # service ID to inject database variable into
+  # RAILWAY_WORKSPACE_ID: ${{ secrets.RAILWAY_WORKSPACE_ID }} # if you are linking to a project in a workspace, uncomment this
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -30,11 +32,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      # - name: Setup # Executes setup scripts for dependencies.
-      #   uses: ./.github/actions/setup
-
       - name: Link to Project
-        run: railway link --project ${{ env.RAILWAY_PROJECT_ID }} --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} --service web # --team ${{ env.RAILWAY_TEAM_ID }} # uncomment this if you are linking to a team project
+        run: |
+          railway link \
+          --project ${{ env.RAILWAY_PROJECT_ID }} \
+          --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} \
+          --service ${{ env.RAILWAY_SERVICE_ID }} \
+          # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ # uncomment this if you are linking to a workspace project
+          --json
 
       - name: Extract PR metadata
         id: pr_meta

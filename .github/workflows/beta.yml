@@ -7,6 +7,8 @@ env:
   RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }} # get this in account settings "https://railway.com/account/tokens" (make sure this is NOT a project token), and scope it to your account (not a workspace)
   RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }} # project ID
   RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }} # railway environment to duplicate from
+  RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }} # service ID to inject database variable into
+  # RAILWAY_WORKSPACE_ID: ${{ secrets.RAILWAY_WORKSPACE_ID }} # if you are linking to a project in a workspace, uncomment this
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -44,12 +46,15 @@ jobs:
     steps:
       - name: Check out code # Fetches the latest code from the repository.
         uses: actions/checkout@v6
-
-      # - name: Setup # Executes setup scripts for dependencies.
-      #   uses: ./.github/actions/setup
-
+         
       - name: Link to Project
-        run: railway link --project ${{ env.RAILWAY_PROJECT_ID }} --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} --service web # --team ${{ env.RAILWAY_TEAM_ID }} # uncomment this if you are linking to a team project
+        run: |
+          railway link \
+          --project ${{ env.RAILWAY_PROJECT_ID }} \
+          --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} \
+          --service ${{ env.RAILWAY_SERVICE_ID }} \
+          # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ # uncomment this if you are linking to a workspace project
+          --json
 
       - name: Extract PR metadata And Create Environment Name
         id: pr_meta
@@ -62,14 +67,26 @@ jobs:
 
       - name: Create Railway Environment
         run: |
-          service_variable=""
-          railway environment new "${{ steps.pr_meta.outputs.environment }}" --copy ${{ env.RAILWAY_ENVIRONMENT_ID }} --service-variable web "${service_variable}"
+          railway environment new "${{ steps.pr_meta.outputs.environment }}" \
+          --copy ${{ env.RAILWAY_ENVIRONMENT_ID }} \
+          --service-config ${{ env.RAILWAY_SERVICE_ID }} variables.API_KEY.value "secret" \
+          --service-config ${{ env.RAILWAY_SERVICE_ID }} variables.API1_KEY.value "secret" \
+          --json
+
+      - name: ReLink to Project with new Environment
+        run: |
+          railway link \
+          --project ${{ env.RAILWAY_PROJECT_ID }} \
+          --environment "${{ steps.pr_meta.outputs.environment }}" \
+          --service ${{ env.RAILWAY_SERVICE_ID }} \
+          # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ # uncomment this if you are linking to a workspace project
+          --json
 
       - name: Deploy (Staging)
         id: deploy
         run: |
-          railway up --environment "${{ steps.pr_meta.outputs.environment }}" --service web
-          OUTPUT=$(railway domain --environment "${{ steps.pr_meta.outputs.environment }}" --service web)
+          railway up --service ${{ env.RAILWAY_SERVICE_ID }} --ci
+          OUTPUT=$(railway domain --service "${{ env.RAILWAY_SERVICE_ID }}")
           URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
           echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
           echo "url=$URL" >> $GITHUB_OUTPUT
