@@ -13,6 +13,9 @@ module.exports = defineConfig([
 
       // Simple feature rule for PR testing: enforce strict equality
       eqeqeq: ["error", "always"],
+
+      // Disallow use of alert() — simple test feature
+      "no-alert": "warn",
     },
   },
 ]);
