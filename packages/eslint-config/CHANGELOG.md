@@ -3,11 +3,22 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [@avivox-workspace/eslint-config@1.2.0](https://github.com/abhisin98/avivox-workspace/compare/@avivox-workspace/eslint-config@1.1.0..@avivox-workspace/eslint-config@1.2.0) - 2026-04-19
+
+### Features
+
+- **(eslint-config)** add no-alert rule to node config - ([34af42b](https://github.com/abhisin98/avivox-workspace/commit/34af42b5881c944a6a920709cbc5cecfcab05b2d)) - abhisin98
+
+---
 ## [@avivox-workspace/eslint-config@1.1.0](https://github.com/abhisin98/avivox-workspace/compare/@avivox-workspace/eslint-config@1.0.0..@avivox-workspace/eslint-config@1.1.0) - 2026-04-13
 
 ### Features
 
 - **(eslint-config)** add prettier, no-unused-vars, and eqeqeq rules - ([153c065](https://github.com/abhisin98/avivox-workspace/commit/153c0657a7bc514a43b767ac4d05b0d87bfbe83c)) - abhisin98
+
+### Miscellaneous Chores
+
+- **(release)** bump versions [skip ci] - ([8050d21](https://github.com/abhisin98/avivox-workspace/commit/8050d21802440fceda03b42164c44c29c035ff07)) - github-actions[bot]
 
 ---
 ## [@avivox-workspace/eslint-config@1.0.0] - 2026-04-11

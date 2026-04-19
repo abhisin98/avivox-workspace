@@ -3,11 +3,22 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
+## [avivox-workspace@1.2.0](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.3..avivox-workspace@1.2.0) - 2026-04-19
+
+### Features
+
+- **(eslint-config)** add no-alert rule to node config - ([34af42b](https://github.com/abhisin98/avivox-workspace/commit/34af42b5881c944a6a920709cbc5cecfcab05b2d)) - abhisin98
+
+---
 ## [avivox-workspace@1.1.3](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.2..avivox-workspace@1.1.3) - 2026-04-19
 
 ### Continuous Integration
 
 - clarify workspace linking comments - ([8b51ee5](https://github.com/abhisin98/avivox-workspace/commit/8b51ee5922c5bc7c04f373f38b2ee6383cfdda51)) - abhisin98
+
+### Miscellaneous Chores
+
+- **(release)** bump versions [skip ci] - ([31bf513](https://github.com/abhisin98/avivox-workspace/commit/31bf513306015159e8abd6a0776d54c2edd2c2a6)) - github-actions[bot]
 
 ---
 ## [avivox-workspace@1.1.2](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.1..avivox-workspace@1.1.2) - 2026-04-19
