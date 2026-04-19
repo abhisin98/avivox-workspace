@@ -47,13 +47,14 @@ jobs:
       - name: Check out code # Fetches the latest code from the repository.
         uses: actions/checkout@v6
          
+      # add this if you are linking to a workspace project
+      # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
       - name: Link to Project
         run: |
           railway link \
           --project ${{ env.RAILWAY_PROJECT_ID }} \
           --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} \
           --service ${{ env.RAILWAY_SERVICE_ID }} \
-          # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ # uncomment this if you are linking to a workspace project
           --json
 
       - name: Extract PR metadata And Create Environment Name
@@ -73,13 +74,14 @@ jobs:
           --service-config ${{ env.RAILWAY_SERVICE_ID }} variables.API1_KEY.value "secret" \
           --json
 
+      # add this if you are linking to a workspace project
+      # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
       - name: ReLink to Project with new Environment
         run: |
           railway link \
           --project ${{ env.RAILWAY_PROJECT_ID }} \
           --environment "${{ steps.pr_meta.outputs.environment }}" \
           --service ${{ env.RAILWAY_SERVICE_ID }} \
-          # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ # uncomment this if you are linking to a workspace project
           --json
 
       - name: Deploy (Staging)
