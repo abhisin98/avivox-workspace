@@ -19,6 +19,7 @@ on:
     types:
       - opened
       - synchronize
+      - reopened
 
 jobs:
   ci:
@@ -62,7 +63,7 @@ jobs:
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           SHA=${{ github.event.pull_request.head.sha }}
-          beta_environment="web-beta.${PR_NUMBER}.${SHA:0:7}"
+          beta_environment="web-beta-${PR_NUMBER}-${SHA:0:7}"
 
           echo "environment=${beta_environment}" >> $GITHUB_OUTPUT
 
