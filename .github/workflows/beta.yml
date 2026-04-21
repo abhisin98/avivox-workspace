@@ -75,19 +75,16 @@ jobs:
           --service-config ${{ env.RAILWAY_SERVICE_ID }} variables.API1_KEY.value "secret" \
           --json
 
-      # add this if you are linking to a workspace project
-      # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
-      - name: ReLink to Project with new Environment
+      - name: Deploy (Staging)
+        id: deploy
         run: |
+          # ReLink to Project with new Environment
           railway link \
           --project ${{ env.RAILWAY_PROJECT_ID }} \
           --environment ${{ steps.pr_meta.outputs.environment }} \
           --service ${{ env.RAILWAY_SERVICE_ID }} \
           --json
 
-      - name: Deploy (Staging)
-        id: deploy
-        run: |
           # Verify we're in the right environment
           railway status
 
@@ -220,7 +217,13 @@ jobs:
               fi
 
               # Generate changelog snippet
-              changelog+="# $pkg_name\n"
+              GIT_CHANGELOG=$(git-cliff --unreleased)
+              changelog+="
+
+              # $pkg_name
+              $GIT_CHANGELOG
+
+              "
               changelog+="$(git-cliff --unreleased)\n\n"
             else
               echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
