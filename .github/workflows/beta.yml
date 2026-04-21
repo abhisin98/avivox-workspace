@@ -88,7 +88,13 @@ jobs:
       - name: Deploy (Staging)
         id: deploy
         run: |
+          # Verify we're in the right environment
+          railway status
+
+          # Deploy explicitly
           railway up --ci
+
+          # Get the domain
           OUTPUT=$(railway domain)
           URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
           echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
@@ -214,7 +220,7 @@ jobs:
               fi
 
               # Generate changelog snippet
-              changelog+=$'# '"$pkg_name"'\n'
+              changelog+="# $pkg_name\n"
               changelog+="$(git-cliff --unreleased)\n\n"
             else
               echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
