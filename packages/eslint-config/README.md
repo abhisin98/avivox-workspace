@@ -10,7 +10,7 @@ pnpm add -D @avivox-workspace/eslint-config eslint
 
 ## Usage
 
-Import the desired configuration in your `.eslintrc.js` or `eslint.config.js`:
+Import the desired configuration in your `eslint.config.js`:
 
 ### Configurations
 
@@ -25,40 +25,49 @@ Import the desired configuration in your `.eslintrc.js` or `eslint.config.js`:
 #### React Project
 
 ```javascript
-import config from '@avivox-workspace/eslint-config/react.js';
+import eslintConfig from '@avivox-workspace/eslint-config/react.js';
+import { defineConfig } from "eslint/config";
 
-export default [
-  {
-    ignores: ['node_modules', 'dist'],
-  },
-  ...config,
-];
+export default defineConfig([
+  eslintConfig,
+]);
 ```
 
 #### Node.js Project
 
 ```javascript
-import config from '@avivox-workspace/eslint-config/node.js';
+import eslintConfig from '@avivox-workspace/eslint-config/node.js';
+import { defineConfig } from "eslint/config";
 
-export default [
-  {
-    ignores: ['node_modules', 'dist'],
-  },
-  ...config,
-];
+export default defineConfig([
+  eslintConfig,
+]);
 ```
 
 #### GraphQL Project
 
 ```javascript
-import config from '@avivox-workspace/eslint-config/graphql.js';
+// eslint.config.js
+import graphqlEslintconfig from "@avivox/eslint-config/graphql.js";
+import eslintConfig from "@avivox/eslint-config/node.js";
+import { defineConfig } from "eslint/config";
 
-export default [
-  {
-    ignores: ['node_modules', 'dist'],
-  },
-  ...config,
-];
+export default defineConfig([
+  eslintConfig,
+  graphqlEslintconfig.schemaConfig,
+]);
+```
+
+```javascript
+// eslint.config.js
+import graphqlEslintconfig from "@avivox/eslint-config/graphql.js";
+import eslintConfig from "@avivox/eslint-config/node.js";
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  eslintConfig,
+  graphqlEslintconfig.operationsRulesConfig,
+]);
 ```
 
 ## Dependencies
