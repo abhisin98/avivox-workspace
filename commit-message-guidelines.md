@@ -5,7 +5,7 @@
 Use this structure for commit messages:
 
 ```
-type(optional scope): short description
+type(scope): short description
 
 * 🎯 First bullet: summary of change
 * 💡 Second bullet: optional detail
@@ -23,7 +23,7 @@ BREAKING CHANGE: Describe breaking behavior (if applicable)
 - `feat` — A new feature
 - `fix` — A bug fix
 - `docs` — Documentation only changes
-- `style` — Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- `style` — Formatting, whitespace, etc. (no code logic changes)
 - `refactor` — A code change that neither fixes a bug nor adds a feature
 - `perf` — A code change that improves performance
 - `test` — Adding missing tests or correcting existing tests
@@ -38,18 +38,18 @@ If the commit reverts a previous commit, it should begin with `revert: `, follow
 
 - `infra` (deployment/infra changes)
 - `docs` (documentation files)
-- `config` (project-level configs like .gitignore, .editorconfig)
-- `build` (build system changes)
-- `deps` (dependency updates)
+- `config` (project-level configs like .gitignore, .editorconfig etc.)
+- `build` (build system changes like webpack, vite, etc.)
+- `deps` (dependency updates like package.json, lockfiles etc.)
 - `tests` (test files, fixtures, mocks)
 - `scripts` (helper scripts and automation utilities)
-- `ci` (CI/CD pipeline configs)
+- `ci` (CI/CD pipeline configs .github/workflows/*, etc.)
 - `security` (security patches, audits, policies)
 - `release` (version bumps, changelog, publishing workflows)
-- `web`
-- `ui`
-- `eslint-config`
-- `typescript-config`
+- `web` (frontend app code apps/web/*)
+- `ui`  (UI components packages/ui/*)
+- `eslint-config` (ESLint configuration packages/eslint-config/*)
+- `typescript-config` (TypeScript configuration packages/typescript-config/*)
 
 Multiple scopes allowed: `type(scope-1, scope-2): description`
 
@@ -58,15 +58,19 @@ Multiple scopes allowed: `type(scope-1, scope-2): description`
 * Imperative, present tense: “add” not “added” or “adds”
 * No capitalization at start
 * No trailing period (.)
+* Max length: 100 characters
 
 ### Body Rules
 
-* Imperative, present tense: “add” not “added” or “adds”
-* The body should include the motivation for the change and contrast this with previous behavior.
-* Include technical context when relevant
+* Must start with a blank line
+* Imperative, present tense
+* Include motivation and contrast with previous behavior
+* Add technical context when relevant
+* Max line length: 120 characters
 
 ### Footer
 
+* Must start with a blank line
 * `Closes: #<issue-number>` → links issues
 * `PROJ: <ticket-number>` → internal tracking
 * `BREAKING CHANGE` → required keyword for major bumps

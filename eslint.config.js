@@ -1,4 +1,4 @@
-import eslintConfig from "@avivox-monorepo/eslint-config/default.js";
+import eslintConfig from "@avivox-workspace/eslint-config/default.js";
 import { includeIgnoreFile } from "@eslint/compat";
 import { defineConfig } from "eslint/config";
 import { dirname, resolve } from "path";
