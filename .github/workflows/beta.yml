@@ -39,6 +39,7 @@ jobs:
     name: Deploy Web (Beta)
     needs: ci
     runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
     permissions:
       contents: read
       pull-requests: write
@@ -46,12 +47,6 @@ jobs:
     steps:
       - name: Check out code # Fetches the latest code from the repository.
         uses: actions/checkout@v6
-
-      - name: Setup # Executes setup scripts for dependencies.
-        uses: ./.github/actions/setup
-
-      - name: Railway CLI can be installed via npm
-        run: npm i -g @railway/cli
          
       # add this if you are linking to a workspace project
       # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
@@ -83,12 +78,7 @@ jobs:
       # add this if you are linking to a workspace project
       # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
       - name: ReLink to Project with new Environment
-        run: |
-          railway link \
-          --project ${{ env.RAILWAY_PROJECT_ID }} \
-          --environment ${{ steps.pr_meta.outputs.environment }} \
-          --service ${{ env.RAILWAY_SERVICE_ID }} \
-          --json
+        run: railway link --project ${{ env.RAILWAY_PROJECT_ID }} --environment ${{ steps.pr_meta.outputs.environment }} --service ${{ env.RAILWAY_SERVICE_ID }} --json
 
       - name: Deploy (Staging)
         id: deploy
@@ -226,12 +216,12 @@ jobs:
 
               # Generate changelog snippet
               GIT_CHANGELOG=$(git-cliff --unreleased)
-              changelog+="
+              changelog+=`
 
               # $pkg_name
               $GIT_CHANGELOG
 
-              "
+              `
             else
               echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
             fi
@@ -241,11 +231,12 @@ jobs:
           done
 
           if [ ${#published_versions[@]} -gt 0 ]; then
-            comment="## Beta Release
+            comment=`
+            ## Beta Release
 
             ### Published Versions:
             $(printf ' - %s\n' "${published_versions[@]}")
-            
+
             ### Installation:
             \`\`\`bash
             # Install any of the published versions individually
@@ -258,9 +249,10 @@ jobs:
             ### Commit Info:
             - PR commit (head): [${HEAD_SHA:0:7}](https://github.com/${REPO}/commit/${HEAD_SHA})
             - Tested merge commit: [${MERGE_SHA:0:7}](https://github.com/${REPO}/commit/${MERGE_SHA})
-            
+
             ### Changelog Highlights:
-            $changelog"
+            $changelog
+            `
 
             # Check for existing bot comment
             existing_comment_id=$(gh api repos/$REPO/issues/$PR_NUMBER/comments --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("## Beta Release"))) | .id' | head -1)
