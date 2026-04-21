@@ -51,6 +51,7 @@ jobs:
       # add this if you are linking to a workspace project
       # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
       - name: Link to Project
+        shell: bash
         run: |
           railway link \
           --project ${{ env.RAILWAY_PROJECT_ID }} \
@@ -60,6 +61,7 @@ jobs:
 
       - name: Extract PR metadata And Create Environment Name
         id: pr_meta
+        shell: bash
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           SHA=${{ github.event.pull_request.head.sha }}
@@ -68,6 +70,7 @@ jobs:
           echo "environment=${beta_environment}" >> $GITHUB_OUTPUT
 
       - name: Create Railway Environment
+        shell: bash
         run: |
           railway environment new ${{ steps.pr_meta.outputs.environment }} \
           --copy ${{ env.RAILWAY_ENVIRONMENT_ID }} \
@@ -78,10 +81,17 @@ jobs:
       # add this if you are linking to a workspace project
       # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
       - name: ReLink to Project with new Environment
-        run: railway link --project ${{ env.RAILWAY_PROJECT_ID }} --environment ${{ steps.pr_meta.outputs.environment }} --service ${{ env.RAILWAY_SERVICE_ID }} --json
+        shell: bash
+        run: |
+          railway link \
+          --project ${{ env.RAILWAY_PROJECT_ID }} \
+          --environment ${{ steps.pr_meta.outputs.environment }} \
+          --service ${{ env.RAILWAY_SERVICE_ID }} \
+          --json
 
       - name: Deploy (Staging)
         id: deploy
+        shell: bash
         run: |
           # Verify we're in the right environment
           railway status
@@ -96,6 +106,7 @@ jobs:
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Deployment Info
+        shell: bash
         run: |
           echo "Preview deployed at: ${{ steps.deploy.outputs.url }}"
 
@@ -216,12 +227,12 @@ jobs:
 
               # Generate changelog snippet
               GIT_CHANGELOG=$(git-cliff --unreleased)
-              changelog+=`
+              changelog+="
 
               # $pkg_name
               $GIT_CHANGELOG
-
-              `
+              
+              "
             else
               echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
             fi
@@ -231,8 +242,7 @@ jobs:
           done
 
           if [ ${#published_versions[@]} -gt 0 ]; then
-            comment=`
-            ## Beta Release
+            comment="## Beta Release
 
             ### Published Versions:
             $(printf ' - %s\n' "${published_versions[@]}")
@@ -251,8 +261,7 @@ jobs:
             - Tested merge commit: [${MERGE_SHA:0:7}](https://github.com/${REPO}/commit/${MERGE_SHA})
 
             ### Changelog Highlights:
-            $changelog
-            `
+            $changelog"
 
             # Check for existing bot comment
             existing_comment_id=$(gh api repos/$REPO/issues/$PR_NUMBER/comments --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("## Beta Release"))) | .id' | head -1)
