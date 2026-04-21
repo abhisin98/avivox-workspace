@@ -68,7 +68,7 @@ jobs:
 
       - name: Create Railway Environment
         run: |
-          railway environment new "${{ steps.pr_meta.outputs.environment }}" \
+          railway environment new ${{ steps.pr_meta.outputs.environment }} \
           --copy ${{ env.RAILWAY_ENVIRONMENT_ID }} \
           --service-config ${{ env.RAILWAY_SERVICE_ID }} variables.API_KEY.value "secret" \
           --service-config ${{ env.RAILWAY_SERVICE_ID }} variables.API1_KEY.value "secret" \
@@ -80,15 +80,15 @@ jobs:
         run: |
           railway link \
           --project ${{ env.RAILWAY_PROJECT_ID }} \
-          --environment "${{ steps.pr_meta.outputs.environment }}" \
+          --environment ${{ steps.pr_meta.outputs.environment }} \
           --service ${{ env.RAILWAY_SERVICE_ID }} \
           --json
 
       - name: Deploy (Staging)
         id: deploy
         run: |
-          railway up --service ${{ env.RAILWAY_SERVICE_ID }} --ci
-          OUTPUT=$(railway domain --service "${{ env.RAILWAY_SERVICE_ID }}")
+          railway up --ci
+          OUTPUT=$(railway domain)
           URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
           echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
           echo "url=$URL" >> $GITHUB_OUTPUT
@@ -213,7 +213,7 @@ jobs:
               fi
 
               # Generate changelog snippet
-              changelog+=$'# $pkg_name\n'
+              changelog+=$'# '"$pkg_name"'\n'
               changelog+="$(git-cliff --unreleased)\n\n"
             else
               echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"

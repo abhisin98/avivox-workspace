@@ -81,15 +81,6 @@ We follow a structured branching strategy to manage deployments across different
 - **Jobs**:
   - **Create Beta PR**: Creates a pull request from the specified QA branch to `main` with auto-generated title and description. Merging this PR triggers the beta deployment workflow.
 
-### Rollback (rollback.yml)
-- **Trigger**: Manually triggered through the GitHub Actions UI
-- **Purpose**: Reverts deployments and package versions in case of issues
-- **Inputs** (provided when triggering):
-  - `deploy_id`: The deployment ID to rollback to (required)
-  - `npm_version`: The npm version to rollback to (optional)
-- **Jobs**:
-  - **Rollback**: Redeploys a previous Railway build and optionally re-publishes an npm version
-
 ## Required GitHub Secrets
 
 The following secrets must be configured in your GitHub repository settings under "Secrets and variables > Actions":
@@ -97,6 +88,7 @@ The following secrets must be configured in your GitHub repository settings unde
 - **`RAILWAY_API_TOKEN`**: Authentication token for accessing the Railway API.
 - **`RAILWAY_PROJECT_ID`**: Unique identifier of the Railway project to deploy.
 - **`RAILWAY_ENVIRONMENT_ID`**: Identifier of the target Railway environment (e.g., staging, production).
+- **`RAILWAY_SERVICE_ID`**: Railway service ID used in Railway CLI commands.
 - **`GITHUB_TOKEN`**: Default GitHub Actions token used for committing, tagging, and pushing changes.
 - **`NPM_TOKEN`**: Authentication token for publishing packages to npm registry
 
@@ -138,22 +130,9 @@ The following secrets must be configured in your GitHub repository settings unde
 4. **Approve for Production**: Once testing passes, approve the pull request to `main`
 5. **Monitor Beta**: Check the beta deployment triggered by the PR for final validation
 
-## Rollback Instructions
-
-If a deployment causes issues in production:
-
-1. Go to the GitHub repository
-2. Navigate to the "Actions" tab
-3. Find the "Rollback Release" workflow
-4. Click "Run workflow"
-5. Fill in the inputs:
-   - **deploy_id**: The ID of the deployment you want to rollback to (find this in Railway dashboard)
-   - **npm_version**: (Optional) The npm version to rollback to, if package rollback is needed
-6. Click "Run workflow" to execute the rollback
-
 ## Summary: Full Flow
 
-Dev → QA → Beta → Prod → Patch → Rollback
+Dev → QA → Beta → Prod → Patch
 
 1. **Development** (`dev/*` branches) → **Dev Environment**
    - Use "Create QA Branch" workflow to promote dev branch to QA
@@ -162,6 +141,5 @@ Dev → QA → Beta → Prod → Patch → Rollback
    - Use "Create Beta Release PR" workflow to promote QA branch to main
 4. **Production** (merge to `main`) → **Production Environment**
 5. **Hotfixes** (`patch/*` branches) → **Production Environment** (bypasses normal flow)
-6. **Rollback** (manual) → Reverts to previous stable state
 
 This flow ensures thorough testing at each stage while allowing for quick hotfixes when necessary.

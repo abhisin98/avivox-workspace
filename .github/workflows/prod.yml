@@ -55,8 +55,8 @@ jobs:
       - name: Deploy (Production)
         id: deploy
         run: |
-          railway up --service ${{ env.RAILWAY_SERVICE_ID }} --ci
-          OUTPUT=$(railway domain --service ${{ env.RAILWAY_SERVICE_ID }})
+          railway up --ci
+          OUTPUT=$(railway domain)
           URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
           echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
           echo "url=$URL" >> $GITHUB_OUTPUT

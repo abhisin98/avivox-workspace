@@ -7,7 +7,7 @@ on:
         description: "Developer branch name (e.g., dev/feature-login)"
         required: true
         type: string
-        pattern: "^dev/[a-zA-Z0-9._-]+$"
+        # pattern: "^dev/[a-zA-Z0-9._-]+$"
 
 jobs:
   create-qa-branch:
