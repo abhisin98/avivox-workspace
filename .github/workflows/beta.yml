@@ -39,7 +39,6 @@ jobs:
     name: Deploy Web (Beta)
     needs: ci
     runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
     permissions:
       contents: read
       pull-requests: write
@@ -47,6 +46,12 @@ jobs:
     steps:
       - name: Check out code # Fetches the latest code from the repository.
         uses: actions/checkout@v6
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Railway CLI can be installed via npm
+        run: npm i -g @railway/cli
          
       # add this if you are linking to a workspace project
       # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
@@ -75,16 +80,19 @@ jobs:
           --service-config ${{ env.RAILWAY_SERVICE_ID }} variables.API1_KEY.value "secret" \
           --json
 
-      - name: Deploy (Staging)
-        id: deploy
+      # add this if you are linking to a workspace project
+      # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
+      - name: ReLink to Project with new Environment
         run: |
-          # ReLink to Project with new Environment
           railway link \
           --project ${{ env.RAILWAY_PROJECT_ID }} \
           --environment ${{ steps.pr_meta.outputs.environment }} \
           --service ${{ env.RAILWAY_SERVICE_ID }} \
           --json
 
+      - name: Deploy (Staging)
+        id: deploy
+        run: |
           # Verify we're in the right environment
           railway status
 
@@ -110,15 +118,15 @@ jobs:
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
             const body = `
-              ${marker}
-              🚀 **Deployment success!**
-              
-              - \`web\` deployed at [${deployUrl}](${deployUrl})
+            ${marker}
+            # 🚀 Deployment success!
 
-              ---
+            - \`web\` deployed at [${deployUrl}](${deployUrl})
 
-              *PR commit (head): [${context.payload.pull_request.head.sha.substring(0,7)}](https://github.com/${owner}/${repo}/commit/${context.payload.pull_request.head.sha})*
-              *Tested merge commit: [${context.sha.substring(0,7)}](https://github.com/${owner}/${repo}/commit/${context.sha})*
+            ---
+
+            *PR commit (head): [${context.payload.pull_request.head.sha.substring(0,7)}](https://github.com/${owner}/${repo}/commit/${context.payload.pull_request.head.sha})*
+            *Tested merge commit: [${context.sha.substring(0,7)}](https://github.com/${owner}/${repo}/commit/${context.sha})*
             `;
 
             const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
@@ -224,7 +232,6 @@ jobs:
               $GIT_CHANGELOG
 
               "
-              changelog+="$(git-cliff --unreleased)\n\n"
             else
               echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
             fi
