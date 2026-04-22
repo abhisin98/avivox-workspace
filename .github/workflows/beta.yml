@@ -50,18 +50,16 @@ jobs:
          
       # add this if you are linking to a workspace project
       # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
-      - name: Link to Project
-        shell: bash
-        run: |
-          railway link \
-          --project ${{ env.RAILWAY_PROJECT_ID }} \
-          --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} \
-          --service ${{ env.RAILWAY_SERVICE_ID }} \
-          --json
+      # - name: Link to Project
+      #   run: |
+      #     railway link \
+      #     --project ${{ env.RAILWAY_PROJECT_ID }} \
+      #     --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} \
+      #     --service ${{ env.RAILWAY_SERVICE_ID }} \
+      #     --json
 
       - name: Extract PR metadata And Create Environment Name
         id: pr_meta
-        shell: bash
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           SHA=${{ github.event.pull_request.head.sha }}
@@ -70,7 +68,6 @@ jobs:
           echo "environment=${beta_environment}" >> $GITHUB_OUTPUT
 
       - name: Create Railway Environment
-        shell: bash
         run: |
           railway environment new ${{ steps.pr_meta.outputs.environment }} \
           --copy ${{ env.RAILWAY_ENVIRONMENT_ID }} \
@@ -80,27 +77,27 @@ jobs:
 
       # add this if you are linking to a workspace project
       # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
-      - name: ReLink to Project with new Environment
-        shell: bash
-        run: |
-          railway link \
-          --project ${{ env.RAILWAY_PROJECT_ID }} \
-          --environment ${{ steps.pr_meta.outputs.environment }} \
-          --service ${{ env.RAILWAY_SERVICE_ID }} \
-          --json
+      # - name: ReLink to Project with new Environment
+      #   run: |
+      #     railway link \
+      #     --project ${{ env.RAILWAY_PROJECT_ID }} \
+      #     --environment ${{ steps.pr_meta.outputs.environment }} \
+      #     --service ${{ env.RAILWAY_SERVICE_ID }} \
+      #     --json
 
       - name: Deploy (Staging)
         id: deploy
         shell: bash
         run: |
-          # Verify we're in the right environment
-          railway status
-
           # Deploy explicitly
-          railway up --ci
+          railway up \
+          --project ${{ env.RAILWAY_PROJECT_ID }} \
+          --environment ${{ steps.pr_meta.outputs.environment }} \
+          --service ${{ env.RAILWAY_SERVICE_ID }} \
+          --ci
 
           # Get the domain
-          OUTPUT=$(railway domain)
+          OUTPUT=$(railway domain --service ${{ env.RAILWAY_SERVICE_ID }})
           URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
           echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
           echo "url=$URL" >> $GITHUB_OUTPUT
