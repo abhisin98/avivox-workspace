@@ -52,7 +52,7 @@ jobs:
         id: pr_meta
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          beta_environment="web-beta-${PR_NUMBER}"
+          beta_environment="beta-${PR_NUMBER}"
 
           echo "environment=${beta_environment}" >> $GITHUB_OUTPUT
 
@@ -71,8 +71,11 @@ jobs:
           --environment ${{ steps.pr_meta.outputs.environment }} \
           --service ${{ env.RAILWAY_SERVICE_ID }} \
           --ci
-
-          railway domain --service ${{ env.RAILWAY_SERVICE_ID }}
+        
+          railway variables \
+          --environment ${{ steps.pr_meta.outputs.environment }} \
+          --service ${{ env.RAILWAY_SERVICE_ID }} \
+          --json
 
       - name: Get the domain
         id: deploy
