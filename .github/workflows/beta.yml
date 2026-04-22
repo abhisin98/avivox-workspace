@@ -62,7 +62,7 @@ jobs:
           --copy ${{ env.RAILWAY_ENVIRONMENT_ID }} \
           --service-config ${{ env.RAILWAY_SERVICE_ID }} variables.API_KEY.value "secret" \
           --service-config ${{ env.RAILWAY_SERVICE_ID }} variables.API1_KEY.value "secret" \
-          --json
+          --json || true
 
       - name: Deploy (Staging)
         run: |
@@ -72,10 +72,12 @@ jobs:
           --service ${{ env.RAILWAY_SERVICE_ID }} \
           --ci
 
+          railway domain --service ${{ env.RAILWAY_SERVICE_ID }}
+
       - name: Get the domain
         id: deploy
         run: |
-          OUTPUT=$(railway domain --environment ${{ steps.pr_meta.outputs.environment }} --service ${{ env.RAILWAY_SERVICE_ID }})
+          OUTPUT=$(railway domain --service ${{ env.RAILWAY_SERVICE_ID }})
           echo "$OUTPUT"
           URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
           echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
