@@ -23,7 +23,6 @@ jobs:
   cleanup-web:
     name: Cleanup Web (Beta)
     runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
     permissions:
       contents: read
       pull-requests: write
@@ -32,30 +31,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-        # add this if you are linking to a workspace project
-        # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
-      - name: Link to Project
-        run: |
-          railway link \
-          --project ${{ env.RAILWAY_PROJECT_ID }} \
-          --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} \
-          --service ${{ env.RAILWAY_SERVICE_ID }} \
-          --json
-
-      - name: Extract PR metadata
+      - name: Extract PR metadata And Create Pr Environment Name
         id: pr_meta
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          SHA=${{ github.event.pull_request.head.sha }}
-          beta_environment="web-beta-${PR_NUMBER}-${SHA:0:7}"
+          beta_environment="beta-${PR_NUMBER}"
+          echo "environment_name=${beta_environment}" >> $GITHUB_OUTPUT
 
-          echo "environment=${beta_environment}" >> $GITHUB_OUTPUT
-
-      - name: Delete Railway Environment
-        run: |
-          railway environment delete ${{ steps.pr_meta.outputs.environment }} --yes || true
+      - id: clean-up
+        name: Cleanup PR Environment (Staging)
+        uses: ./.github/actions/railway-deploy
+        with:
+          api-token: ${{ env.RAILWAY_API_TOKEN }}
+          project-id: ${{ env.RAILWAY_PROJECT_ID }}
+          environment-id: ${{ env.RAILWAY_ENVIRONMENT_ID }}
+          service-id: ${{ env.RAILWAY_SERVICE_ID }}
+          pr-environment-name: ${{ steps.pr_meta.outputs.environment_name }}
+          cleanup-pr-environment: "true"
 
       - name: Remove deployment comment
+        if: ${{ steps.clean-up.outputs.cleanup == 'true' }}
         uses: actions/github-script@v7
         with:
           script: |
@@ -68,21 +63,16 @@ jobs:
 
             if (existingComment) {
               await github.rest.issues.deleteComment({ owner, repo, comment_id: existingComment.id });
+              await github.rest.issues.createComment({
+                issue_number,
+                owner,
+                repo,
+                body: `🧹 **Preview environment \`${{ steps.pr_meta.outputs.environment }}\` deleted for PR #${context.issue.number}. Deployment comment removed.**`
+              });
               core.info(`Deleted deployment comment ID: ${existingComment.id}`);
             } else {
               core.info('No deployment comment found to delete');
             }
-
-      - name: Post cleanup confirmation
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🧹 **Preview environment \`${{ steps.pr_meta.outputs.environment }}\` deleted for PR #${context.issue.number}. Deployment comment removed.**`
-            });
 
   # cleanup-packages:
   #   name: Cleanup Packages (Beta)

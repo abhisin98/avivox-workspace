@@ -34,32 +34,21 @@ jobs:
     name: Deploy Web (Prod)
     needs: ci
     runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
     environment:
       name: Web
-      url: ${{ env.DEPLOY_URL }} # Stores the deployment URL dynamically
+      url: ${{ steps.deploy.outputs.url }} # Stores the deployment URL dynamically
     steps:
       - name: Check out code # Fetches the latest code from the repository.
         uses: actions/checkout@v6
 
-      # add this if you are linking to a workspace project
-      # --workspace ${{ env.RAILWAY_WORKSPACE_ID }} \ 
-      - name: Link to Project
-        run: |
-          railway link \
-          --project ${{ env.RAILWAY_PROJECT_ID }} \
-          --environment ${{ env.RAILWAY_ENVIRONMENT_ID }} \
-          --service ${{ env.RAILWAY_SERVICE_ID }} \
-          --json
-
-      - name: Deploy (Production)
-        id: deploy
-        run: |
-          railway up --ci
-          OUTPUT=$(railway domain)
-          URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
-          echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
-          echo "url=$URL" >> $GITHUB_OUTPUT
+      - id: deploy
+        name: Deploy (Production)
+        uses: ./.github/actions/railway-deploy
+        with:
+          api-token: ${{ env.RAILWAY_API_TOKEN }}
+          project-id: ${{ env.RAILWAY_PROJECT_ID }}
+          environment-id: ${{ env.RAILWAY_ENVIRONMENT_ID }}
+          service-id: ${{ env.RAILWAY_SERVICE_ID }}
 
       - name: Deployment Info
         run: |

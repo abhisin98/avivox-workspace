@@ -1,0 +1,105 @@
+name: Railway Deploy
+description: Deploy service to Railway
+
+inputs:
+  api-token:
+    description: Railway API token
+    required: true
+  project-id:
+    description: Railway project ID
+    required: true
+  environment-id:
+    description: Base environment ID
+    required: true
+  service-id:
+    description: Railway service ID
+    required: true
+  pr-environment-name:
+    description: Optional PR-specific environment name
+    default: ""
+  cleanup-pr-environment:
+    description: Whether to cleanup PR-specific environment (true/false)
+    default: "false"
+    
+outputs:
+  url:
+    description: Deployed service URL
+    value: ${{ steps.url.outputs.url }}
+  cleanup:
+    description: Whether environment cleanup succeeded (true/false)
+    value: ${{ steps.cleanup.outputs.success }}
+
+runs:
+  using: composite
+  steps:
+    - name: 🏗 Setup Node.js environment
+      uses: actions/setup-node@v4
+
+    - name: Install Railway CLI via npm
+      shell: bash
+      run: npm i -g @railway/cli
+    
+    - id: environment
+      name: Select Environment
+      if: ${{ inputs.cleanup-pr-environment == 'false' }}
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.pr-environment-name }}" ]; then
+          ENVIRONMENT="${{ inputs.environment-id }}"
+        else
+          ENVIRONMENT="${{ inputs.pr-environment-name }}"
+        fi
+        echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+
+    - name: Create Railway PR Environment
+      if: ${{ inputs.cleanup-pr-environment == 'false' && steps.environment.outputs.environment == inputs.pr-environment-name }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        railway environment new "${{ steps.environment.outputs.environment }}" \
+          --copy "${{ inputs.environment-id }}" \
+          --json || true
+    
+    - name: Deploy to Railway
+      if: ${{ inputs.cleanup-pr-environment == 'false' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        railway up \
+          --project "${{ inputs.project-id }}" \
+          --environment "${{ steps.environment.outputs.environment }}" \
+          --service "${{ inputs.service-id }}" \
+          --ci
+    
+    - id: url
+      name: Get Service URL
+      if: ${{ inputs.cleanup-pr-environment == 'false' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        DOMAIN=$(railway variables \
+          --environment "${{ steps.environment.outputs.environment }}" \
+          --service "${{ inputs.service-id }}" \
+          --json | jq -r '.RAILWAY_PUBLIC_DOMAIN')
+        FULL_URL="https://$DOMAIN"
+        echo "url=$FULL_URL" >> $GITHUB_OUTPUT
+    
+    - id: cleanup
+      name: Delete Railway Environment
+      if: ${{ inputs.cleanup-pr-environment == 'true' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        set +e
+        railway environment delete "${{ inputs.pr-environment-name }}" --yes --json
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -eq 0 ]; then
+          echo "success=true" >> $GITHUB_OUTPUT
+        else
+          echo "success=false" >> $GITHUB_OUTPUT
+        fi
+        exit 0
