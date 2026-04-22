@@ -96,7 +96,7 @@ jobs:
           --ci
 
           # Get the domain
-          OUTPUT=$(railway domain --project ${{ env.RAILWAY_PROJECT_ID }} --environment ${{ steps.pr_meta.outputs.environment }} --service ${{ env.RAILWAY_SERVICE_ID }})
+          OUTPUT=$(railway domain --environment ${{ steps.pr_meta.outputs.environment }} --service ${{ env.RAILWAY_SERVICE_ID }})
           URL=$(echo "$OUTPUT" | grep -oE 'https://[^ ]+')
           echo "DEPLOY_URL=$URL" >> $GITHUB_ENV
           echo "url=$URL" >> $GITHUB_OUTPUT
