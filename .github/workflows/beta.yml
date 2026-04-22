@@ -87,7 +87,6 @@ jobs:
 
       - name: Deploy (Staging)
         id: deploy
-        shell: bash
         run: |
           # Deploy explicitly
           railway up \
@@ -103,7 +102,6 @@ jobs:
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Deployment Info
-        shell: bash
         run: |
           echo "Preview deployed at: ${{ steps.deploy.outputs.url }}"
 
