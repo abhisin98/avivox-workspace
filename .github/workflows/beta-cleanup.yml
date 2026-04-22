@@ -63,21 +63,16 @@ jobs:
 
             if (existingComment) {
               await github.rest.issues.deleteComment({ owner, repo, comment_id: existingComment.id });
+              await github.rest.issues.createComment({
+                issue_number,
+                owner,
+                repo,
+                body: `🧹 **Preview environment \`${{ steps.pr_meta.outputs.environment }}\` deleted for PR #${context.issue.number}. Deployment comment removed.**`
+              });
               core.info(`Deleted deployment comment ID: ${existingComment.id}`);
             } else {
               core.info('No deployment comment found to delete');
             }
-
-      - name: Post cleanup confirmation
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🧹 **Preview environment \`${{ steps.pr_meta.outputs.environment }}\` deleted for PR #${context.issue.number}. Deployment comment removed.**`
-            });
 
   # cleanup-packages:
   #   name: Cleanup Packages (Beta)
