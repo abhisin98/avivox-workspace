@@ -83,7 +83,7 @@ jobs:
         run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
 
       - name: Generate Changelogs And Update package.json versions
-        uses: ./.github/actions/generate-changelogs
+        uses: ./.github/actions/changelogs
         with:
           release-type: beta
           pr-number: ${{ github.event.pull_request.number }}

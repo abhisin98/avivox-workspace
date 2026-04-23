@@ -70,7 +70,7 @@ jobs:
         run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
 
       - name: Publish Hotfix to (Production)
-        uses: ./.github/actions/generate-changelogs
+        uses: ./.github/actions/changelogs
         with:
           release-type: patch
           do-git: "false"

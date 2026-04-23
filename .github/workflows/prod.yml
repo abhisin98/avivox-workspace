@@ -75,7 +75,7 @@ jobs:
         run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
 
       - name: Publish Packages (Production)
-        uses: ./.github/actions/generate-changelogs
+        uses: ./.github/actions/changelogs
         with:
           release-type: auto
           # pr-number: ${{ github.event.pull_request.number }} # PR number
