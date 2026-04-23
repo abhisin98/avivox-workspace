@@ -1,105 +1,212 @@
-name: Railway Deploy
-description: Deploy service to Railway
+name: Railway Deploy Pro
+description: Smart Railway deployment with preview + cleanup
 
 inputs:
   api-token:
-    description: Railway API token
     required: true
   project-id:
-    description: Railway project ID
     required: true
   environment-id:
-    description: Base environment ID
     required: true
   service-id:
-    description: Railway service ID
     required: true
-  pr-environment-name:
-    description: Optional PR-specific environment name
-    default: ""
-  cleanup-pr-environment:
-    description: Whether to cleanup PR-specific environment (true/false)
+
+  preview:
+    description: Enable preview environment (true/false)
     default: "false"
-    
+
+  pr-number:
+    required: false
+
+  github-token:
+    required: false
+
+  cleanup-preview:
+    description: Delete preview environment (true/false)
+    default: "false"
+
 outputs:
   url:
-    description: Deployed service URL
     value: ${{ steps.url.outputs.url }}
-  cleanup:
-    description: Whether environment cleanup succeeded (true/false)
-    value: ${{ steps.cleanup.outputs.success }}
 
 runs:
   using: composite
   steps:
-    - name: 🏗 Setup Node.js environment
-      uses: actions/setup-node@v4
+    - uses: actions/setup-node@v4
 
-    - name: Install Railway CLI via npm
+    - name: Install Railway CLI
       shell: bash
       run: npm i -g @railway/cli
-    
-    - id: environment
-      name: Select Environment
-      if: ${{ inputs.cleanup-pr-environment == 'false' }}
+
+    - name: Install jq
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y jq
+
+    # -------------------------
+    # VALIDATION
+    # -------------------------
+    - name: Validate inputs
       shell: bash
       run: |
-        if [ -z "${{ inputs.pr-environment-name }}" ]; then
-          ENVIRONMENT="${{ inputs.environment-id }}"
-        else
-          ENVIRONMENT="${{ inputs.pr-environment-name }}"
+        if [ "${{ inputs.preview }}" = "true" ] && [ -z "${{ inputs.pr-number }}" ]; then
+          echo "❌ preview=true requires pr-number"
+          exit 1
         fi
-        echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
 
-    - name: Create Railway PR Environment
-      if: ${{ inputs.cleanup-pr-environment == 'false' && steps.environment.outputs.environment == inputs.pr-environment-name }}
+    # -------------------------
+    # ENV RESOLUTION
+    # -------------------------
+    - id: env
+      shell: bash
+      run: |
+        if [ "${{ inputs.preview }}" = "true" ]; then
+          ENV="preview-${{ inputs.pr-number }}"
+          TAG="preview"
+        else
+          ENV="${{ inputs.environment-id }}"
+          TAG="production"
+        fi
+
+        echo "env=$ENV" >> $GITHUB_OUTPUT
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+        echo "Using environment: $ENV"
+
+    # -------------------------
+    # CHECK ENV EXISTS
+    # -------------------------
+    - id: check-env
+      if: ${{ inputs.preview == 'true' }}
       env:
         RAILWAY_API_TOKEN: ${{ inputs.api-token }}
       shell: bash
       run: |
-        railway environment new "${{ steps.environment.outputs.environment }}" \
+        EXISTS=$(railway environment list --json | jq -r \
+          ".[] | select(.name == \"${{ steps.env.outputs.env }}\") | .name")
+
+        if [ -z "$EXISTS" ]; then
+          echo "exists=false" >> $GITHUB_OUTPUT
+        else
+          echo "exists=true" >> $GITHUB_OUTPUT
+        fi
+
+    # -------------------------
+    # CREATE ENV (ONLY PREVIEW)
+    # -------------------------
+    - name: Create env if needed
+      if: ${{ inputs.preview == 'true' && steps.check-env.outputs.exists == 'false' && inputs.cleanup-preview == 'false' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        railway environment new \
+          "${{ steps.env.outputs.env }}" \
           --copy "${{ inputs.environment-id }}" \
-          --json || true
-    
-    - name: Deploy to Railway
-      if: ${{ inputs.cleanup-pr-environment == 'false' }}
+          --json || echo "Env may already exist"
+
+    # -------------------------
+    # DEPLOY
+    # -------------------------
+    - name: Deploy
+      if: ${{ inputs.cleanup-preview == 'false' }}
       env:
         RAILWAY_API_TOKEN: ${{ inputs.api-token }}
       shell: bash
       run: |
         railway up \
           --project "${{ inputs.project-id }}" \
-          --environment "${{ steps.environment.outputs.environment }}" \
+          --environment "${{ steps.env.outputs.env }}" \
           --service "${{ inputs.service-id }}" \
           --ci
-    
-    - id: url
-      name: Get Service URL
-      if: ${{ inputs.cleanup-pr-environment == 'false' }}
+
+    # -------------------------
+    # TAG DEPLOYMENT
+    # -------------------------
+    - name: Tag deployment
+      if: ${{ inputs.cleanup-preview == 'false' }}
       env:
         RAILWAY_API_TOKEN: ${{ inputs.api-token }}
       shell: bash
       run: |
+        railway variables set DEPLOY_TAG=${{ steps.env.outputs.tag }} \
+          --environment "${{ steps.env.outputs.env }}" \
+          --service "${{ inputs.service-id }}"
+
+    # -------------------------
+    # GET URL
+    # -------------------------
+    - id: url
+      if: ${{ inputs.cleanup-preview == 'false' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        sleep 5
+
         DOMAIN=$(railway variables \
-          --environment "${{ steps.environment.outputs.environment }}" \
+          --environment "${{ steps.env.outputs.env }}" \
           --service "${{ inputs.service-id }}" \
           --json | jq -r '.RAILWAY_PUBLIC_DOMAIN')
+
+        if [ -z "$DOMAIN" ] || [ "$DOMAIN" = "null" ]; then
+          echo "❌ Failed to fetch domain"
+          exit 1
+        fi
+
         FULL_URL="https://$DOMAIN"
         echo "url=$FULL_URL" >> $GITHUB_OUTPUT
-    
-    - id: cleanup
-      name: Delete Railway Environment
-      if: ${{ inputs.cleanup-pr-environment == 'true' }}
+
+    # -------------------------
+    # PR COMMENT (ONLY PREVIEW)
+    # -------------------------
+    - name: Upsert PR Comment
+      if: ${{ inputs.preview == 'true' && inputs.github-token != '' && inputs.cleanup-preview == 'false' }}
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const pr = Number("${{ inputs.pr-number }}")
+          const url = "${{ steps.url.outputs.url }}"
+          const marker = "<!-- railway-preview -->"
+
+          const body = `${marker}
+          🚀 **Preview Deployment Ready**
+
+          🔗 ${url}
+
+          _This comment updates automatically._`
+
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: pr
+          })
+
+          const existing = comments.data.find(c => c.body.includes(marker))
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body
+            })
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body
+            })
+          }
+
+    # -------------------------
+    # CLEANUP
+    # -------------------------
+    - name: Cleanup env
+      if: ${{ inputs.preview == 'true' && inputs.cleanup-preview == 'true' }}
       env:
         RAILWAY_API_TOKEN: ${{ inputs.api-token }}
       shell: bash
       run: |
-        set +e
-        railway environment delete "${{ inputs.pr-environment-name }}" --yes --json
-        EXIT_CODE=$?
-        if [ $EXIT_CODE -eq 0 ]; then
-          echo "success=true" >> $GITHUB_OUTPUT
-        else
-          echo "success=false" >> $GITHUB_OUTPUT
-        fi
-        exit 0
+        railway environment delete "${{ steps.env.outputs.env }}" --yes || true

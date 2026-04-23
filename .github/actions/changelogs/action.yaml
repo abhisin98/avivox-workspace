@@ -1,0 +1,410 @@
+name: Generate Changelogs And Update package.json versions
+description: Full release pipeline with changelog generation, PR comments, git tagging, GitHub releases, and package publishing
+
+inputs:
+  release-type:
+    description: Type of release (auto | beta | patch | minor | major | canary)
+    required: false
+    default: "auto"
+  pr-number:
+    description: Pull request number (used for beta version metadata and preview comments)
+    required: false
+  head-sha:
+    description: HEAD commit SHA (used for beta version metadata)
+    required: false
+
+  do-git:
+    description: Whether to commit changes and create git tags
+    default: "true"
+  commit-message:
+    description: Commit message for version bumps
+    default: "chore(release): bump versions + changelogs"
+
+  create-release:
+    description: Whether to create GitHub releases
+    default: "true"
+  github-token:
+    description: GitHub token for API operations
+    required: false
+
+  do-publish:
+    description: Whether to publish packages to registry
+    default: "true"
+  publish-tool:
+    description: Package manager to publish with (pnpm | npm | yarn)
+    default: "pnpm"
+  publish-access:
+    description: Access level for published packages
+    default: "public"
+  publish-tag:
+    description: Custom dist-tag (optional)
+    required: false
+  publish-registry:
+    description: Custom registry URL (optional)
+    required: false
+
+outputs:
+  packages:
+    description: JSON array of processed packages
+    value: ${{ steps.changelog.outputs.packages }}
+
+runs:
+  using: composite
+  steps:
+
+    # Install git-cliff (used for changelog + version bump detection)
+    - name: Install git-cliff (changelog generator)
+      uses: taiki-e/install-action@git-cliff
+
+    # Ensure jq is installed (used heavily for JSON processing)
+    - name: Ensure jq is installed (JSON processor)
+      shell: bash
+      run: command -v jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)
+
+    # DETECT CHANGES, GENERATE CHANGELOGS, BUMP VERSIONS
+    - id: changelog
+      name: Generate changelogs and bump package versions
+      shell: bash
+      env:
+        INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
+        INPUT_PR_NUMBER: ${{ inputs.pr-number }}
+        INPUT_HEAD_SHA: ${{ inputs.head-sha }}
+      run: |
+        set -euo pipefail
+
+        # Normalize release type to lowercase
+        normalized_release_type=$(echo "$INPUT_RELEASE_TYPE" | tr '[:upper:]' '[:lower:]')
+
+        # Validate allowed release types
+        case "$normalized_release_type" in
+          auto|beta|patch|minor|major|canary) ;;
+          *) echo "Invalid release type"; exit 1 ;;
+        esac
+
+        # Find all package.json files excluding node_modules
+        mapfile -t package_json_files < <(find . -path "./node_modules" -prune -o -name package.json -print)
+
+        # Initialize output JSON array
+        updated_packages_json="[]"
+
+        # Loop through each package
+        for package_file in "${package_json_files[@]}"; do
+
+          package_directory=$(dirname "$package_file")
+          pushd "$package_directory" >/dev/null || continue
+
+          # Extract package name and current version
+          package_name=$(jq -r .name package.json)
+          current_version=$(jq -r .version package.json)
+
+          # Skip invalid packages
+          if [[ -z "$package_name" || "$package_name" == "null" ]]; then
+            popd >/dev/null
+            continue
+          fi
+
+          # Detect if tags exist for this package
+          git_cliff_args=()
+          if git tag --list "${package_name}@*" | grep -q .; then
+            git_cliff_args+=(--tag-pattern "${package_name}@*")
+          fi
+
+          # Generate changelog
+          git-cliff "${git_cliff_args[@]}" --bump -o CHANGELOG.md
+
+          # Get next version suggested by git-cliff
+          bumped_version_raw=$(git-cliff "${git_cliff_args[@]}" --bumped-version | tr -d '\r\n')
+          suggested_next_version=${bumped_version_raw##*@}
+
+          # Only proceed if version actually changes
+          if [[ "$suggested_next_version" != "$current_version" ]]; then
+
+            case "$normalized_release_type" in
+
+              canary)
+                # Generate unique identifiers
+                short_commit_sha=${INPUT_HEAD_SHA:-$(git rev-parse --short HEAD)}
+                short_commit_sha=${short_commit_sha:0:7}
+
+                timestamp=$(date +%s)
+
+                # Always bump at least patch level baseline
+                IFS=. read major minor patch <<< "$current_version"
+                next_patch_version="$major.$minor.$((patch+1))"
+
+                # Final canary version
+                new_version="${next_patch_version}-canary.${short_commit_sha}.${timestamp}"
+                ;;
+
+              beta)
+                # Get a reliable commit SHA (fallback to git if input is missing)
+                full_head_sha=${INPUT_HEAD_SHA:-$(git rev-parse HEAD)}
+
+                # Shorten SHA to 7 characters (standard practice)
+                short_head_sha=${full_head_sha:0:7}
+
+                # Generate timestamp to guarantee uniqueness across CI runs
+                build_timestamp=$(date +%s)
+
+                # Use PR number if available, fallback to 0
+                pr_number=${INPUT_PR_NUMBER:-0}
+
+                # Final beta version format:
+                # <version>-beta.<pr>.<sha>.<timestamp>
+                new_version="${suggested_next_version}-beta.${pr_number}.${short_head_sha}.${build_timestamp}"
+                ;;
+
+              patch)
+                IFS=. read major minor patch <<< "$current_version"
+                new_version="$major.$minor.$((patch+1))"
+                ;;
+
+              minor)
+                IFS=. read major minor _ <<< "$current_version"
+                new_version="$major.$((minor+1)).0"
+                ;;
+
+              major)
+                IFS=. read major _ _ <<< "$current_version"
+                new_version="$((major+1)).0.0"
+                ;;
+
+              auto)
+                new_version="$suggested_next_version"
+                ;;
+
+            esac
+
+            # Update version in package.json
+            jq --arg version "$new_version" '.version=$version' package.json > temp.json
+            mv temp.json package.json
+
+            # Append to output JSON
+            updated_packages_json=$(jq -c \
+              --arg name "$package_name" \
+              --arg version "$new_version" \
+              --arg dir "$package_directory" \
+              --arg old "$current_version" \
+              '. + [{name:$name,version:$version,dir:$dir,old_version:$old}]' \
+              <<< "$updated_packages_json")
+          fi
+
+          popd >/dev/null
+        done
+
+        echo "packages=$updated_packages_json" >> $GITHUB_OUTPUT
+
+    # COMMENT ON PR (BETA RELEASE ONLY)
+    - name: Post beta release preview comment on PR
+      if: ${{ inputs.release-type == 'beta' && inputs.pr-number != '' }}
+      uses: actions/github-script@v7
+      env:
+        PACKAGES_JSON: ${{ steps.changelog.outputs.packages }}
+      with:
+        github-token: ${{ inputs.github-token || github.token }}
+        script: |
+          const fs = require("fs");
+          const path = require("path");
+
+          const packages = JSON.parse(process.env.PACKAGES_JSON || "[]");
+          if (!packages.length) return;
+
+          const pullRequestNumber = Number("${{ inputs.pr-number }}");
+
+          function extractChangelogSection(content, version) {
+            const regex = new RegExp(`##\\s*v?${version.replace(/\\./g,"\\\\.")}[^\\n]*([\\s\\S]*?)(?=\\n##\\s|$)`,"i");
+            const match = content.match(regex);
+            return match ? match[0].trim() : "";
+          }
+
+          const repository = `${context.repo.owner}/${context.repo.repo}`;
+
+          const commentBlocks = packages.map(pkg => {
+            let changelogNotes = "";
+            const changelogFile = path.join(pkg.dir, "CHANGELOG.md");
+
+            if (fs.existsSync(changelogFile)) {
+              changelogNotes = extractChangelogSection(fs.readFileSync(changelogFile,"utf8"), pkg.version);
+            }
+
+            return `
+            ### 📦 ${pkg.name}@${pkg.version}
+            
+            - 🔗 https://www.npmjs.com/package/${pkg.name}/v/${pkg.version}
+            - 📥 \`pnpm add ${pkg.name}@${pkg.version}\`
+            ${pkg.old_version ? `- 🔄 https://github.com/${repository}/compare/${pkg.name}@${pkg.old_version}...${pkg.name}@${pkg.version}` : ""}
+            
+            ${changelogNotes || "_No changelog_"}
+            `;
+          });
+
+          const body = `## 🚀 Beta Release Preview\n\n${commentBlocks.join("\n\n")}`;
+
+          const { data: existingComments } = await github.rest.issues.listComments({
+            ...context.repo,
+            issue_number: pullRequestNumber
+          });
+
+          const existing = existingComments.find(c => c.body.includes("Beta Release Preview"));
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              ...context.repo,
+              comment_id: existing.id,
+              body
+            });
+          } else {
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: pullRequestNumber,
+              body
+            });
+          }
+
+    # COMMIT CHANGES + CREATE TAGS
+    - name: Commit version changes and create git tags
+      if: ${{ inputs.do-git == 'true' && inputs.release-type != 'canary' }}
+      shell: bash
+      env:
+        PACKAGES_JSON: ${{ steps.changelog.outputs.packages }}
+        COMMIT_MESSAGE: ${{ inputs.commit-message }}
+      run: |
+        set -euo pipefail
+
+        # Exit early if nothing changed
+        if [[ -z "$PACKAGES_JSON" || "$PACKAGES_JSON" == "[]" ]]; then
+          exit 0
+        fi
+
+        # Configure git identity
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+        # Commit all changes
+        git add .
+        git commit -m "$COMMIT_MESSAGE" || true
+
+        # Create tags for each package version
+        echo "$PACKAGES_JSON" | jq -c '.[]' | while read -r package; do
+          tag_name=$(echo "$package" | jq -r '.name + "@" + .version')
+
+          if ! git rev-parse "$tag_name" >/dev/null 2>&1; then
+            git tag "$tag_name"
+          fi
+        done
+
+        # Push commits and tags
+        git push
+        git push --tags
+
+    # CREATE GITHUB RELEASES
+    - name: Create GitHub releases for each package
+      if: ${{ inputs.create-release == 'true' && inputs.do-git == 'true' }}
+      uses: actions/github-script@v7
+      env:
+        PACKAGES_JSON: ${{ steps.changelog.outputs.packages }}
+      with:
+        github-token: ${{ inputs.github-token || github.token }}
+        script: |
+          const fs = require("fs");
+          const path = require("path");
+
+          const packages = JSON.parse(process.env.PACKAGES_JSON || "[]");
+          if (!packages.length) return;
+
+          for (const pkg of packages) {
+            const tag = `${pkg.name}@${pkg.version}`;
+
+            try {
+              await github.rest.repos.getReleaseByTag({ ...context.repo, tag });
+              continue;
+            } catch {}
+
+            let body = `Release ${tag}`;
+            const changelogFile = path.join(pkg.dir, "CHANGELOG.md");
+
+            if (fs.existsSync(changelogFile)) {
+              const raw = fs.readFileSync(changelogFile, "utf8");
+              const regex = new RegExp(`##\\s*v?${pkg.version.replace(/\\./g,"\\\\.")}[^\\n]*([\\s\\S]*?)(?=\\n##\\s|$)`,"i");
+              const match = raw.match(regex);
+              if (match) body = match[0].trim();
+            }
+
+            await github.rest.repos.createRelease({
+              ...context.repo,
+              tag_name: tag,
+              name: tag,
+              body,
+              prerelease: pkg.version.includes("-beta.") || pkg.version.includes("-canary.")
+            });
+          }
+
+    # PUBLISH PACKAGES
+    - name: Publish packages to registry
+      if: ${{ inputs.do-publish == 'true' }}
+      shell: bash
+      env:
+        PACKAGES_JSON: ${{ steps.changelog.outputs.packages }}
+        PUBLISH_TOOL: ${{ inputs.publish-tool }}
+        PUBLISH_ACCESS: ${{ inputs.publish-access }}
+        PUBLISH_REGISTRY: ${{ inputs.publish-registry }}
+        PUBLISH_TAG: ${{ inputs.publish-tag }}
+      run: |
+        set -euo pipefail
+
+        normalized_tool=$(echo "$PUBLISH_TOOL" | tr '[:upper:]' '[:lower:]')
+
+        case "$normalized_tool" in
+          pnpm|npm|yarn) ;;
+          *) echo "Invalid publish tool"; exit 1 ;;
+        esac
+
+        if [[ -z "$PACKAGES_JSON" || "$PACKAGES_JSON" == "[]" ]]; then
+          exit 0
+        fi
+
+        echo "$PACKAGES_JSON" | jq -c '.[]' | while read -r package; do
+
+          package_dir=$(echo "$package" | jq -r .dir)
+          package_version=$(echo "$package" | jq -r .version)
+          package_name=$(echo "$package" | jq -r .name)
+
+          # Skip private packages
+          if [[ "$(jq -r '.private // false' "$package_dir/package.json")" == "true" ]]; then
+            continue
+          fi
+
+          pushd "$package_dir" >/dev/null
+
+          # Determine publish tag
+          publish_tag="${PUBLISH_TAG:-}"
+          if [[ -z "$publish_tag" ]]; then
+            publish_tag="latest"
+          fi
+
+          if [[ "$package_version" == *"-beta."* && -z "$PUBLISH_TAG" ]]; then
+            publish_tag="beta"
+          fi
+
+          if [[ "$package_version" == *"-canary."* && -z "$PUBLISH_TAG" ]]; then
+            publish_tag="canary"
+          fi
+
+          # Select publish command
+          case "$normalized_tool" in
+            pnpm) publish_command=(pnpm publish --no-git-checks) ;;
+            npm) publish_command=(npm publish) ;;
+            yarn) publish_command=(yarn npm publish) ;;
+          esac
+
+          publish_command+=(--access "$PUBLISH_ACCESS" --tag "$publish_tag")
+
+          if [[ -n "$PUBLISH_REGISTRY" ]]; then
+            publish_command+=(--registry "$PUBLISH_REGISTRY")
+          fi
+
+          # Execute publish
+          "${publish_command[@]}" || echo "Skipping $package_name"
+
+          popd >/dev/null
+        done

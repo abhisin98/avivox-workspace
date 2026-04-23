@@ -9,6 +9,7 @@ env:
   RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }} # railway environment to duplicate from
   RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }} # service ID to inject database variable into
   # RAILWAY_WORKSPACE_ID: ${{ secrets.RAILWAY_WORKSPACE_ID }} # if you are linking to a project in a workspace, uncomment this
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 on:
@@ -41,8 +42,8 @@ jobs:
       - name: Check out code # Fetches the latest code from the repository.
         uses: actions/checkout@v6
 
-      - id: deploy
-        name: Deploy (Production)
+      - name: Deploy (Production)
+        id: deploy
         uses: ./.github/actions/railway-deploy
         with:
           api-token: ${{ env.RAILWAY_API_TOKEN }}
@@ -59,7 +60,8 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # required for tags + releases
+      # pull-requests: write  # required for PR comments
     steps:
       - name: Check out code # Fetches the latest code from the repository.
         uses: actions/checkout@v6
@@ -72,145 +74,30 @@ jobs:
       - name: Configure npm
         run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
 
-      - name: Install git-cliff
-        uses: taiki-e/install-action@git-cliff
-
-      - name: Generate Changelogs And Update package.json versions
-        id: bump
-        run: |
-          set -euo pipefail
-
-          # Save repo root for navigation
-          repo_root="$(pwd)"
-
-          # Find all package.json files, excluding node_modules
-          mapfile -t package_files < <(find . -path "./node_modules" -prune -o -name "package.json" -print)
-
-          # Collect results in an array
-          results=()
-
-          for pkg_path in "${package_files[@]}"; do
-            pkg_dir="$(dirname "$pkg_path")"
-            cd "$pkg_dir" || continue
-
-            # Get package name for git-cliff tag pattern
-            pkg_name=$(jq -r '.name' package.json)
-
-            # Check if any tags exist for this package
-            if git tag --list "${pkg_name}@*" | head -1 | grep -q .; then
-              # Tags exist, use tag pattern
-              git-cliff --tag-pattern "${pkg_name}@*" --bump -o CHANGELOG.md
-              raw_version=$(git-cliff --tag-pattern "${pkg_name}@*" --bumped-version | tr -d '\r\n')
-            else
-              # First run, no tags yet, run without tag pattern
-              git-cliff --bump -o CHANGELOG.md
-              raw_version=$(git-cliff --bumped-version | tr -d '\r\n')
-            fi
-
-            version="${raw_version##*@}"
-            current_version=$(jq -r '.version' package.json)
-
-            # Only proceed if version actually changed
-            if [ -n "$version" ] && [ "$version" != "$current_version" ]; then
-              echo "⬆️  Bump detected for $pkg_name: $current_version -> $version"
-
-              # Update package.json version safely
-              tmpfile="$(mktemp)"
-              jq ".version = \"$version\"" package.json > "$tmpfile" && mv "$tmpfile" package.json
-
-              # Append JSON object to results array
-              results+=("$(jq -n \
-                --arg name "$pkg_name" \
-                --arg path "$pkg_path" \
-                --arg version "$version" \
-                --arg tag "${pkg_name}@${version}" \
-                '{name:$name,path:$path,version:$version,tag:$tag}')")
-              
-            else
-              echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
-            fi
-
-            # Return to repo root
-            cd "$repo_root"
-          done
-
-          # Aggregate results into a proper JSON array
-          json_array=$(printf '%s\n' "${results[@]}" | jq -s '.')
-
-          # Write aggregated JSON array to GitHub output
-          {
-            echo "packages<<EOF"
-            echo "$json_array"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-        
       - name: Publish Packages (Production)
-        run: |
-          set -euo pipefail
+        uses: ./.github/actions/generate-changelogs
+        with:
+          release-type: auto
+          # pr-number: ${{ github.event.pull_request.number }} # PR number
+          # head-sha: ${{ github.event.pull_request.head.sha }} # commit
 
-          # Save repo root for navigation
-          repo_root="$(pwd)"
+          do-git: "true"
+          commit-message: "chore(release): bump versions [skip ci]
 
-          declare -a published_versions
+           * 🎯 update package.json and CHANGELOG.md
+           * 💡 publish non-private packages to npm with tag latest
+           * 🔧 generate tags for bumped versions
 
-          packages='${{ steps.bump.outputs.packages }}'
-          # Parse JSON and loop
-          for row in $(echo "$packages" | jq -c '.[]'); do
-            name=$(echo "$row" | jq -r '.name')
-            path=$(echo "$row" | jq -r '.path')
-            version=$(echo "$row" | jq -r '.version')
-            tag=$(echo "$row" | jq -r '.tag')
+           WHY: automate release process for consistency and traceability"
+          
+          create-release: "true"
+          github-token: ${{ env.GITHUB_TOKEN }}
 
-            pkg_dir="$(dirname "$path")"
-            cd "$pkg_dir" || continue
-
-            # Publish if not private
-            is_private=$(jq -r '.private // false' package.json)
-            if [ "$is_private" != "true" ]; then
-              echo "📤 Publishing $name@$version"
-              pnpm publish --access public --tag latest --no-git-checks
-            else
-              echo "🚫 Skipping private package $name"
-            fi
-
-            git add package.json CHANGELOG.md
-            published_versions+=("$tag")
-
-            # Return to repo root
-            cd "$repo_root"
-          done
-
-          # Commit and push changes if any packages were updated
-          if [ ${#published_versions[@]} -gt 0 ]; then
-            echo "💾 Committing version updates"
-
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore(release): bump versions [skip ci]
-
-            * 🎯 update package.json and CHANGELOG.md
-            * 💡 publish non-private packages to npm with tag latest
-            * 🔧 generate tags for bumped versions
-            
-            WHY: automate release process for consistency and traceability
-            "
-            
-            # Create tags safely
-            for tag in "${published_versions[@]}"; do
-              if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
-                echo "🏷️  Tag already exists, skipping: $tag"
-              else
-                git tag "$tag"
-                echo "🏷️  Created tag: $tag"
-              fi
-            done
-
-            git push
-            git push --tags
-            echo "✅ Release complete!"
-          else
-            echo "ℹ️  No changes detected across any packages"
-          fi
+          do-publish: "true"
+          publish-tool: "pnpm"
+          publish-access: "public"
+          publish-tag: "latest"
+          # publish-registry: ""
 
       # - name: Update package versions, generate changelogs, and publish to Npm # Publish Packages (Production) with tag latest
       #   run: |
