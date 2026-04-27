@@ -1,171 +1,200 @@
-# Changelog
+# 🚀 Changelog
 
-All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
+All notable changes to this project will be documented in this file.
 
----
-## [avivox-workspace@1.2.5](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.2.4..avivox-workspace@1.2.5) - 2026-04-22
+## [avivox-workspace@1.2.8] - 2026-04-27
 
-### Continuous Integration
+### 🔧 Refactoring
 
-- **(ci)** streamline beta workflow deploy and changelog generation - ([6baaa19](https://github.com/abhisin98/avivox-workspace/commit/6baaa19ce76b94f9705efac1d6988dea977f82dc)) - abhisin98
+- **workflows:** Clean up CI workflows and remove commented-out code (d47d3a5)
 
----
-## [avivox-workspace@1.2.4](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.2.3..avivox-workspace@1.2.4) - 2026-04-21
 
-### Continuous Integration
+## [avivox-workspace@1.2.7] - 2026-04-27
 
-- **(ci)** refine beta workflow deployment and changelog formatting - ([466eb39](https://github.com/abhisin98/avivox-workspace/commit/466eb39e3c73cfd2d865c1bae5bc4a1c0cd53ff0)) - abhisin98
+### 🔧 Refactoring
 
-### Miscellaneous Chores
+- **workflows:** Clean up CI workflows and remove commented-out code (15c811c)
 
-- **(release)** bump versions [skip ci] - ([a0c4b89](https://github.com/abhisin98/avivox-workspace/commit/a0c4b897fac48fcaaae095666b86292332274ac0)) - github-actions[bot]
 
----
-## [avivox-workspace@1.2.3](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.2.2..avivox-workspace@1.2.3) - 2026-04-21
+## [avivox-workspace@1.2.6] - 2026-04-23
 
-### Continuous Integration
+### 🔄 CI/CD
 
-- **(ci)** standardize beta environment naming and triggers - ([2ded363](https://github.com/abhisin98/avivox-workspace/commit/2ded36367e8dfd379555ef8d727850d0dc831ca6)) - abhisin98
+- **ci:** Streamline beta workflow deploy and changelog generation (a3ca097)
 
-### Miscellaneous Chores
+- **ci:** Streamline beta workflow deploy and changelog generation (10947cd)
 
-- **(release)** bump versions [skip ci] - ([bf79c7b](https://github.com/abhisin98/avivox-workspace/commit/bf79c7bb53ad5bd1ca81d0e1f534c9f3c972eaba)) - github-actions[bot]
 
----
-## [avivox-workspace@1.2.2](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.2.1..avivox-workspace@1.2.2) - 2026-04-21
+## [avivox-workspace@1.2.5] - 2026-04-22
 
-### Documentation
+### 🔄 CI/CD
 
-- add GitHub Actions workflows documentation - ([00e1d44](https://github.com/abhisin98/avivox-workspace/commit/00e1d446d422559f25a105e1c411116fc56381d3)) - abhisin98
+- **ci:** Streamline beta workflow deploy and changelog generation (6baaa19)
 
-### Miscellaneous Chores
+### 🧹 Chores
 
-- **(release)** bump versions [skip ci] - ([96b66b8](https://github.com/abhisin98/avivox-workspace/commit/96b66b800439d35a865ea1fb627a8f65d03b6492)) - github-actions[bot]
+- **release:** Bump versions [skip ci] (d97546b)
 
----
-## [avivox-workspace@1.2.1](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.2.0..avivox-workspace@1.2.1) - 2026-04-21
 
-### Continuous Integration
+## [avivox-workspace@1.2.4] - 2026-04-21
 
-- update railway commands in workflows - ([3baf7a8](https://github.com/abhisin98/avivox-workspace/commit/3baf7a8b354d15169b5afaf4815010d58d485f58)) - abhisin98
+### 🔄 CI/CD
 
-### Miscellaneous Chores
+- **ci:** Refine beta workflow deployment and changelog formatting (466eb39)
 
-- **(release)** bump versions [skip ci] - ([58f930f](https://github.com/abhisin98/avivox-workspace/commit/58f930fea16f0fafcf981ba954d1f42de1d221d3)) - github-actions[bot]
+### 🧹 Chores
 
----
-## [avivox-workspace@1.2.0](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.3..avivox-workspace@1.2.0) - 2026-04-19
+- **release:** Bump versions [skip ci] (a0c4b89)
 
-### Features
 
-- **(eslint-config)** add no-alert rule to node config - ([34af42b](https://github.com/abhisin98/avivox-workspace/commit/34af42b5881c944a6a920709cbc5cecfcab05b2d)) - abhisin98
+## [avivox-workspace@1.2.3] - 2026-04-21
 
-### Miscellaneous Chores
+### 🔄 CI/CD
 
-- **(release)** bump versions [skip ci] - ([673a6be](https://github.com/abhisin98/avivox-workspace/commit/673a6be682daefd504874748776d60ad48d99325)) - github-actions[bot]
+- **ci:** Standardize beta environment naming and triggers (2ded363)
 
----
-## [avivox-workspace@1.1.3](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.2..avivox-workspace@1.1.3) - 2026-04-19
+### 🧹 Chores
 
-### Continuous Integration
+- **release:** Bump versions [skip ci] (bf79c7b)
 
-- clarify workspace linking comments - ([8b51ee5](https://github.com/abhisin98/avivox-workspace/commit/8b51ee5922c5bc7c04f373f38b2ee6383cfdda51)) - abhisin98
 
-### Miscellaneous Chores
+## [avivox-workspace@1.2.2] - 2026-04-21
 
-- **(release)** bump versions [skip ci] - ([31bf513](https://github.com/abhisin98/avivox-workspace/commit/31bf513306015159e8abd6a0776d54c2edd2c2a6)) - github-actions[bot]
+### 📚 Documentation
 
----
-## [avivox-workspace@1.1.2](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.1..avivox-workspace@1.1.2) - 2026-04-19
+- Add GitHub Actions workflows documentation (00e1d44)
 
-### Continuous Integration
+### 🧹 Chores
 
-- add railway service id support - ([cfcb81d](https://github.com/abhisin98/avivox-workspace/commit/cfcb81d1791a5989cfd8fd72d16bcaedf10111bd)) - abhisin98
+- **release:** Bump versions [skip ci] (96b66b8)
 
-### Miscellaneous Chores
 
-- **(release)** bump versions [skip ci] - ([82aa419](https://github.com/abhisin98/avivox-workspace/commit/82aa4197b15bf9a7fa44cce3455ae691ba1801ae)) - github-actions[bot]
+## [avivox-workspace@1.2.1] - 2026-04-21
 
----
-## [avivox-workspace@1.1.1](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.1.0..avivox-workspace@1.1.1) - 2026-04-13
+### 🔄 CI/CD
 
-### Continuous Integration
+- Update railway commands in workflows (3baf7a8)
 
-- add beta cleanup workflow and improve metadata handling - ([f77b62f](https://github.com/abhisin98/avivox-workspace/commit/f77b62fb4470ffa182b986d593b3576e88241b03)) - abhisin98
+### 🧹 Chores
 
-### Miscellaneous Chores
+- **release:** Bump versions [skip ci] (58f930f)
 
-- **(release)** bump versions [skip ci] - ([bdf0361](https://github.com/abhisin98/avivox-workspace/commit/bdf0361e17c95f951e0ce9bcd47434bfb515bac9)) - github-actions[bot]
 
----
-## [avivox-workspace@1.1.0](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.5..avivox-workspace@1.1.0) - 2026-04-13
+## [avivox-workspace@1.2.0] - 2026-04-19
 
-### Features
+### 🆕 Features
 
-- **(eslint-config)** add prettier, no-unused-vars, and eqeqeq rules - ([153c065](https://github.com/abhisin98/avivox-workspace/commit/153c0657a7bc514a43b767ac4d05b0d87bfbe83c)) - abhisin98
+- **eslint-config:** Add no-alert rule to node config (34af42b)
 
-### Miscellaneous Chores
+### 🧹 Chores
 
-- **(release)** bump versions [skip ci] - ([8050d21](https://github.com/abhisin98/avivox-workspace/commit/8050d21802440fceda03b42164c44c29c035ff07)) - github-actions[bot]
+- **release:** Bump versions [skip ci] (673a6be)
 
----
-## [avivox-workspace@1.0.5](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.4..avivox-workspace@1.0.5) - 2026-04-13
 
-### Continuous Integration
+## [avivox-workspace@1.1.3] - 2026-04-19
 
-- improve beta workflow with repo-specific gh cli usage - ([39a46ee](https://github.com/abhisin98/avivox-workspace/commit/39a46ee75161ae3204c83863eba87002536c251c)) - abhisin98
+### 🔄 CI/CD
 
-### Miscellaneous Chores
+- Clarify workspace linking comments (8b51ee5)
 
-- **(release)** bump versions [skip ci] - ([080b341](https://github.com/abhisin98/avivox-workspace/commit/080b341fe8f98594375107abe1040ca208bd25b6)) - github-actions[bot]
+### 🧹 Chores
 
----
-## [avivox-workspace@1.0.4](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.3..avivox-workspace@1.0.4) - 2026-04-13
+- **release:** Bump versions [skip ci] (31bf513)
 
-### Continuous Integration
 
-- switch beta workflow to gh cli for pr creation - ([deecff3](https://github.com/abhisin98/avivox-workspace/commit/deecff368d2c8050a431da232db4477b889c04f4)) - abhisin98
+## [avivox-workspace@1.1.2] - 2026-04-19
 
-### Miscellaneous Chores
+### 🔄 CI/CD
 
-- **(release)** bump versions [skip ci] - ([77cf53c](https://github.com/abhisin98/avivox-workspace/commit/77cf53ce42e5715e822a47ac5c9501995f5e0034)) - github-actions[bot]
+- Add railway service id support (cfcb81d)
 
----
-## [avivox-workspace@1.0.3](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.2..avivox-workspace@1.0.3) - 2026-04-13
+### 🧹 Chores
 
-### Continuous Integration
+- **release:** Bump versions [skip ci] (82aa419)
 
-- add branch validation to qa and beta workflows - ([ff527c0](https://github.com/abhisin98/avivox-workspace/commit/ff527c0e1261ef9bb262dff4c50747bba4173a12)) - abhisin98
 
-### Miscellaneous Chores
+## [avivox-workspace@1.1.1] - 2026-04-13
 
-- **(release)** bump versions [skip ci] - ([d3e09fb](https://github.com/abhisin98/avivox-workspace/commit/d3e09fb096f56d3ae8f8a136f6c58b91eb052f36)) - github-actions[bot]
+### 🔄 CI/CD
 
----
-## [avivox-workspace@1.0.2](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.1..avivox-workspace@1.0.2) - 2026-04-12
+- Add beta cleanup workflow and improve metadata handling (f77b62f)
 
-### Continuous Integration
+### 🧹 Chores
 
-- enhance qa and beta workflows - ([5326582](https://github.com/abhisin98/avivox-workspace/commit/5326582b19d73e945ad0de1c1e093a8d0f6ad27a)) - abhisin98
+- **release:** Bump versions [skip ci] (bdf0361)
 
-### Miscellaneous Chores
 
-- **(release)** bump versions [skip ci] - ([56a31e6](https://github.com/abhisin98/avivox-workspace/commit/56a31e6d5ac60fec8850f48ccfc2bb0ebcdef314)) - github-actions[bot]
+## [avivox-workspace@1.1.0] - 2026-04-13
 
----
-## [avivox-workspace@1.0.1](https://github.com/abhisin98/avivox-workspace/compare/avivox-workspace@1.0.0..avivox-workspace@1.0.1) - 2026-04-11
+### 🆕 Features
 
-### Miscellaneous Chores
+- **eslint-config:** Add prettier, no-unused-vars, and eqeqeq rules (153c065)
 
-- **(deps)** add unrs-resolver to onlybuiitdependencies - ([efe5d89](https://github.com/abhisin98/avivox-workspace/commit/efe5d894a1c9a6fe8b8ddd3fb88f83fa6a11c8f7)) - abhisin98
-- **(release)** bump versions [skip ci] - ([ac5a76d](https://github.com/abhisin98/avivox-workspace/commit/ac5a76da1ad0a59bae0efee83e62999e3b037cf4)) - github-actions[bot]
+### 🧹 Chores
 
----
+- **release:** Bump versions [skip ci] (8050d21)
+
+
+## [avivox-workspace@1.0.5] - 2026-04-13
+
+### 🔄 CI/CD
+
+- Improve beta workflow with repo-specific gh cli usage (39a46ee)
+
+### 🧹 Chores
+
+- **release:** Bump versions [skip ci] (080b341)
+
+
+## [avivox-workspace@1.0.4] - 2026-04-13
+
+### 🔄 CI/CD
+
+- Switch beta workflow to gh cli for pr creation (deecff3)
+
+### 🧹 Chores
+
+- **release:** Bump versions [skip ci] (77cf53c)
+
+
+## [avivox-workspace@1.0.3] - 2026-04-13
+
+### 🔄 CI/CD
+
+- Add branch validation to qa and beta workflows (ff527c0)
+
+### 🧹 Chores
+
+- **release:** Bump versions [skip ci] (d3e09fb)
+
+
+## [avivox-workspace@1.0.2] - 2026-04-12
+
+### 🔄 CI/CD
+
+- Enhance qa and beta workflows (5326582)
+
+### 🧹 Chores
+
+- **release:** Bump versions [skip ci] (56a31e6)
+
+
+## [avivox-workspace@1.0.1] - 2026-04-11
+
+### 🧹 Chores
+
+- **deps:** Add unrs-resolver to onlybuiitdependencies (efe5d89)
+
+- **release:** Bump versions [skip ci] (ac5a76d)
+
+
 ## [avivox-workspace@1.0.0] - 2026-04-11
 
-### Miscellaneous Chores
+### 🧹 Chores
 
-- **(config)** add pnpm workspace and turbo configuration - ([2095145](https://github.com/abhisin98/avivox-workspace/commit/2095145e460a29f611ceb906ef2c42718762e9a8)) - abhisin98
-- **(release)** bump versions [skip ci] - ([aa5b6ec](https://github.com/abhisin98/avivox-workspace/commit/aa5b6ec8bf3d1762667885884ba0776b96ad3f82)) - github-actions[bot]
+- **config:** Add pnpm workspace and turbo configuration (2095145)
 
-<!-- generated by git-cliff -->
+- **release:** Bump versions [skip ci] (aa5b6ec)
+
+---
+Generated with git-cliff
