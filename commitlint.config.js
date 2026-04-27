@@ -2,7 +2,7 @@
 // Avivox Workspace — Strict Conventional Commit + Monorepo + AI + Changelog Unified System
 
 /** @type {import('@commitlint/types').UserConfig} */
-module.exports = {
+export default {
   extends: ["@commitlint/config-conventional"],
 
   // -----------------------------------

@@ -213,9 +213,10 @@ runs:
 
           function extractChangelogSection(content, version) {
             const escapedVersion = version.replace(/\./g,"\\.");
-            const regex = new RegExp(`^##\\s*\\[?${escapedVersion}\\]?[^\\n]*$([\\s\\S]*?)(?=^##\\s*\\[|$)`, "ms");
-            const match = content.match(regex);
-            return match ? match[0].trim() : "";
+            // Split changelog into version blocks, then find exact version
+            const sections = content.split(/^##\s+/gm);
+            const target = sections.find((section) => new RegExp(`^\\[[^\\]]*${escapedVersion}\\]`).test(section));
+            return target ? `## ${target.trim()}` : "";
           }
 
           const repository = `${context.repo.owner}/${context.repo.repo}`;
@@ -327,9 +328,10 @@ runs:
             if (fs.existsSync(changelogFile)) {
               const raw = fs.readFileSync(changelogFile, "utf8");
               const escapedVersion = pkg.version.replace(/\./g,"\\.");
-              const regex = new RegExp(`^##\\s*\\[?${escapedVersion}\\]?[^\\n]*$([\\s\\S]*?)(?=^##\\s*\\[|$)`, "ms");
-              const match = raw.match(regex);
-              if (match) body = match[0].trim();
+              // Split changelog into version blocks, then find exact version
+              const sections = raw.split(/^##\s+/gm);
+              const target = sections.find((section) => new RegExp(`^\\[[^\\]]*${escapedVersion}\\]`).test(section));
+              if (target) body = `## ${target.trim()}`;
             }
 
             await github.rest.repos.createRelease({
