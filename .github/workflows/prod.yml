@@ -82,14 +82,7 @@ jobs:
           # head-sha: ${{ github.event.pull_request.head.sha }} # commit
 
           do-git: "true"
-          commit-message: "chore(release): bump versions [skip ci]
-
-           * 🎯 update package.json and CHANGELOG.md
-           * 💡 publish non-private packages to npm with tag latest
-           * 🔧 generate tags for bumped versions
-
-           WHY: automate release process for consistency and traceability"
-          
+          # commit-message: ""
           create-release: "true"
           github-token: ${{ env.GITHUB_TOKEN }}
 
@@ -98,102 +91,3 @@ jobs:
           publish-access: "public"
           publish-tag: "latest"
           # publish-registry: ""
-
-      # - name: Update package versions, generate changelogs, and publish to Npm # Publish Packages (Production) with tag latest
-      #   run: |
-      #     set -euo pipefail
-
-      #     # Save repo root for navigation
-      #     repo_root="$(pwd)"
-
-      #     # Find all package.json files, excluding node_modules
-      #     mapfile -t package_files < <(find . -path "./node_modules" -prune -o -name "package.json" -print)
-
-      #     changed_any=false
-      #     declare -a tags_to_create
-
-      #     for pkg_path in "${package_files[@]}"; do
-      #       pkg_dir="$(dirname "$pkg_path")"
-      #       cd "$pkg_dir" || continue
-
-      #       echo "📦 Processing $pkg_path"
-
-      #       # Get package name for git-cliff tag pattern
-      #       pkg_name=$(jq -r '.name' package.json)
-
-      #       # Check if any tags exist for this package
-      #       if git tag --list "${pkg_name}@*" | head -1 | grep -q .; then
-      #         # Tags exist, use tag pattern
-      #         bump_output=$(git-cliff --tag-pattern "${pkg_name}@*" --bump -o CHANGELOG.md 2>&1)
-      #         raw_version=$(git-cliff --tag-pattern "${pkg_name}@*" --bumped-version | tr -d '\r\n')
-      #       else
-      #         # First run, no tags yet, run without tag pattern
-      #         bump_output=$(git-cliff --bump -o CHANGELOG.md 2>&1)
-      #         raw_version=$(git-cliff --bumped-version | tr -d '\r\n')
-      #       fi
-      #       echo "$bump_output"
-
-      #       version="${raw_version##*@}"
-
-      #       # Only proceed if version actually changed
-      #       current_version=$(jq -r '.version' package.json)
-      #       if [ -n "$version" ] && [ "$version" != "$current_version" ]; then
-      #         echo "⬆️  Bump detected for $pkg_name: $current_version -> $version"
-              
-      #         # Update package.json version safely
-      #         tmpfile="$(mktemp)"
-      #         jq ".version = \"$version\"" package.json > "$tmpfile" && mv "$tmpfile" package.json
-
-      #         # Publish if not private
-      #         is_private=$(jq -r '.private // false' package.json)
-      #         if [ "$is_private" != "true" ]; then
-      #           echo "📤 Publishing $pkg_name@$version"
-      #           pnpm publish --access public --tag latest --no-git-checks
-      #         else
-      #           echo "🚫 Skipping private package $pkg_name"
-      #         fi
-
-      #         # Stage changes for commit
-      #         git add package.json CHANGELOG.md
-      #         tags_to_create+=("${pkg_name}@${version}")
-      #         changed_any=true
-
-      #       else
-      #         echo "ℹ️  No version bump for $pkg_path (current: $current_version, detected: $version)"
-      #       fi
-
-      #       # Return to repo root
-      #       cd "$repo_root"
-      #     done
-
-      #     # Commit and push changes if any packages were updated
-      #     if [ "$changed_any" = true ]; then
-      #       echo "💾 Committing version updates"
-
-      #       git config user.name "github-actions[bot]"
-      #       git config user.email "github-actions[bot]@users.noreply.github.com"
-      #       git commit -m "chore(release): bump versions [skip ci]
-
-      #       * 🎯 update package.json and CHANGELOG.md
-      #       * 💡 publish non-private packages to npm with tag latest
-      #       * 🔧 generate tags for bumped versions
-            
-      #       WHY: automate release process for consistency and traceability
-      #       "
-            
-      #       # Create tags safely
-      #       for tag in "${tags_to_create[@]}"; do
-      #         if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
-      #           echo "🏷️  Tag already exists, skipping: $tag"
-      #         else
-      #           git tag "$tag"
-      #           echo "🏷️  Created tag: $tag"
-      #         fi
-      #       done
-
-      #       git push
-      #       git push --tags
-      #       echo "✅ Release complete!"
-      #     else
-      #       echo "ℹ️  No changes detected across any packages"
-      #     fi
