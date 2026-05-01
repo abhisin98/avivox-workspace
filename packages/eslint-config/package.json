@@ -1,6 +1,6 @@
 {
   "name": "@avivox/eslint-config",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "license": "MIT",
   "main": "default.js",
   "files": [
