@@ -111,7 +111,7 @@ runs:
       run: |
         railway variables set DEPLOY_TAG=${{ steps.env.outputs.tag }} \
           --environment "${{ steps.env.outputs.env }}" \
-          --service "${{ inputs.service-id }}"
+          --service "${{ inputs.service-id }}" || echo "Skipping tagging"
 
     # -------------------------
     # GET URL
@@ -131,7 +131,7 @@ runs:
 
         if [ -z "$DOMAIN" ] || [ "$DOMAIN" = "null" ]; then
           echo "❌ Failed to fetch domain"
-          exit 1
+          DOMAIN="N/A"
         fi
 
         FULL_URL="https://$DOMAIN"

@@ -493,7 +493,7 @@ runs:
           fi
 
           # Execute publish
-          "${publish_command[@]}" || echo "Skipping $package_name"
+          "${publish_command[@]}"
 
           popd >/dev/null
         done
