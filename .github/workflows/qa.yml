@@ -1,0 +1,53 @@
+name: QA Deployment
+
+concurrency:
+  # Ensures only one workflow run per branch/event group at a time
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true # Cancels in-progress runs of the same group when a new one starts
+
+on:
+  push:
+    branches:
+      - "qa/*"
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v6
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Run CI Action
+        uses: ./.github/actions/ci
+
+  # deploy-web:
+  #   name: Deploy Web (QA)
+  #   needs: ci
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check out code # Fetches the latest code from the repository.
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup # Executes setup scripts for dependencies.
+  #       uses: ./.github/actions/setup
+
+  #     - name: Deploy (QA)
+  #       run: echo "Deploy Web in environment qa"
+
+  # publish-packages:
+  #   name: Publish Packages (QA)
+  #   needs: ci
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check out code # Fetches the latest code from the repository.
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup # Executes setup scripts for dependencies.
+  #       uses: ./.github/actions/setup
+
+  #     - name: Publish Packages (QA)
+  #       run: echo "Publish Packages with tag qa"

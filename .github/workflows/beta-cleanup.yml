@@ -1,0 +1,60 @@
+name: Beta Cleanup
+
+env:
+  # Environment Variables:
+  # - Used to configure settings such as database connections and API keys.
+  # - It's best to store sensitive values in GitHub Secrets for security.
+  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }} # get this in account settings "https://railway.com/account/tokens" (make sure this is NOT a project token), and scope it to your account (not a workspace)
+  RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }} # project ID
+  RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }} # railway environment to duplicate from
+  RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }} # service ID to inject database variable into
+  # RAILWAY_WORKSPACE_ID: ${{ secrets.RAILWAY_WORKSPACE_ID }} # if you are linking to a project in a workspace, uncomment this
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # npm registry token for cleanup operations (future use)
+
+concurrency:
+  # Ensures only one workflow run per branch/event group at a time
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true # Cancels in-progress runs of the same group when a new one starts
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  cleanup-web:
+    name: Cleanup Web (Beta)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v6
+
+      - name: Cleanup PR Environment (Staging)
+        uses: ./.github/actions/railway-deploy
+        with:
+          api-token: ${{ env.RAILWAY_API_TOKEN }}
+          project-id: ${{ env.RAILWAY_PROJECT_ID }}
+          environment-id: ${{ env.RAILWAY_ENVIRONMENT_ID }}
+          service-id: ${{ env.RAILWAY_SERVICE_ID }}
+
+          preview: "true"
+          pr-number: ${{ github.event.pull_request.number }}
+          cleanup-preview: "true"
+
+  cleanup-packages:
+    name: Cleanup Packages (Beta)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v6
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Configure npm
+        run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
+
+      - name: Unpublish beta packages
+        run: echo "Hello World"

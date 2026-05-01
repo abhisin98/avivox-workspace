@@ -1,0 +1,35 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "editor.suggest.preview": true,
+  "editor.inlineSuggest.minShowDelay": 1,
+  "editor.quickSuggestionsDelay": 1,
+
+  "files.autoSave": "onFocusChange",
+
+  "terminal.integrated.defaultProfile.windows": "Command Prompt",
+  "npm.enableRunFromFolder": true,
+  "npm.scriptExplorerAction": "run",
+
+  "js/ts.tsdk.path": "./node_modules/typescript/lib",
+
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact", "graphql"],
+  "eslint.options": {},
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto",
+      "changeProcessCWD": true
+    },
+    { "directory": "./apps/**/*", "changeProcessCWD": true },
+    { "directory": "./packages/**/*", "changeProcessCWD": true },
+  ],
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "file": "commit-message-guidelines.md",
+    }
+  ],
+}

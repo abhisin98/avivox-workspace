@@ -1,0 +1,193 @@
+name: Railway Deploy Pro
+description: Smart Railway deployment with preview + cleanup
+
+inputs:
+  api-token:
+    required: true
+  project-id:
+    required: true
+  environment-id:
+    required: true
+  service-id:
+    required: true
+
+  preview:
+    description: Enable preview environment (true/false)
+    default: "false"
+
+  pr-number:
+    description: Pull request number (required when preview=true)
+    required: false
+
+  github-token:
+    description: GitHub App token for creating/updating PR comments (required when preview=true)
+    required: false
+
+  cleanup-preview:
+    description: Delete preview environment (true/false)
+    default: "false"
+
+outputs:
+  url:
+    value: ${{ steps.url.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+
+    - name: Install Railway CLI
+      shell: bash
+      run: npm i -g @railway/cli
+
+    # -------------------------
+    # VALIDATION
+    # -------------------------
+    - name: Validate inputs
+      shell: bash
+      run: |
+        if [ "${{ inputs.preview }}" = "true" ] && [ -z "${{ inputs.pr-number }}" ]; then
+          echo "❌ preview=true requires pr-number"
+          exit 1
+        fi
+
+    # -------------------------
+    # ENV RESOLUTION
+    # -------------------------
+    - id: env
+      shell: bash
+      run: |
+        if [ "${{ inputs.preview }}" = "true" ]; then
+          ENV="preview-${{ inputs.pr-number }}"
+          TAG="preview"
+        else
+          ENV="${{ inputs.environment-id }}"
+          TAG="production"
+        fi
+
+        echo "env=$ENV" >> $GITHUB_OUTPUT
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+        echo "Using environment: $ENV"
+
+    # -------------------------
+    # CREATE ENV (ONLY PREVIEW)
+    # -------------------------
+    - name: Create env if needed
+      if: ${{ inputs.preview == 'true' && inputs.cleanup-preview == 'false' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        railway environment new \
+          "${{ steps.env.outputs.env }}" \
+          --copy "${{ inputs.environment-id }}" \
+          --json || echo "Env may already exist"
+
+    # -------------------------
+    # DEPLOY
+    # -------------------------
+    - name: Deploy
+      if: ${{ inputs.cleanup-preview == 'false' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        sleep 5
+        railway up \
+          --project "${{ inputs.project-id }}" \
+          --environment "${{ steps.env.outputs.env }}" \
+          --service "${{ inputs.service-id }}" \
+          --ci
+
+    # -------------------------
+    # TAG DEPLOYMENT
+    # -------------------------
+    - name: Tag deployment
+      if: ${{ inputs.cleanup-preview == 'false' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        railway variables set DEPLOY_TAG=${{ steps.env.outputs.tag }} \
+          --environment "${{ steps.env.outputs.env }}" \
+          --service "${{ inputs.service-id }}"
+
+    # -------------------------
+    # GET URL
+    # -------------------------
+    - id: url
+      if: ${{ inputs.cleanup-preview == 'false' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        sleep 5
+
+        DOMAIN=$(railway variables \
+          --environment "${{ steps.env.outputs.env }}" \
+          --service "${{ inputs.service-id }}" \
+          --json | jq -r '.RAILWAY_PUBLIC_DOMAIN')
+
+        if [ -z "$DOMAIN" ] || [ "$DOMAIN" = "null" ]; then
+          echo "❌ Failed to fetch domain"
+          exit 1
+        fi
+
+        FULL_URL="https://$DOMAIN"
+        echo "url=$FULL_URL" >> $GITHUB_OUTPUT
+
+    # -------------------------
+    # PR COMMENT (ONLY PREVIEW)
+    # -------------------------
+    - name: Upsert PR Comment
+      if: ${{ inputs.preview == 'true' && inputs.github-token != '' && inputs.cleanup-preview == 'false' }}
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const pr = Number("${{ inputs.pr-number }}")
+          const url = "${{ steps.url.outputs.url }}"
+          const marker = "<!-- railway-preview -->"
+
+          const body = `${marker}
+          # 🚀 Preview Deployment Ready
+
+          🔗 ${url}
+
+          _This comment updates automatically._`
+
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: pr
+          })
+
+          const existing = comments.data.find(c => c.body.includes(marker))
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body: body.replace(/[ \t]+/g, " ").trim()
+            })
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body: body.replace(/[ \t]+/g, " ").trim()
+            })
+          }
+
+    # -------------------------
+    # CLEANUP
+    # -------------------------
+    - name: Cleanup env
+      if: ${{ inputs.preview == 'true' && inputs.cleanup-preview == 'true' }}
+      env:
+        RAILWAY_API_TOKEN: ${{ inputs.api-token }}
+      shell: bash
+      run: |
+        railway environment delete "${{ steps.env.outputs.env }}" --yes || true

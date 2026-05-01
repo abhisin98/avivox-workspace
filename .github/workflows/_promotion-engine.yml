@@ -1,0 +1,168 @@
+name: Promotion Engine
+
+on:
+  workflow_call:
+    inputs:
+      source_branch:
+        required: true
+        type: string
+      target_type:
+        required: true
+        type: string # qa OR beta
+      use_github_app:
+        type: boolean
+        default: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: promotion-${{ inputs.target_type }}-${{ inputs.source_branch }}
+      cancel-in-progress: true
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        if: ${{ inputs.use_github_app == true }}
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        if: ${{ steps.app-token.outputs.token != '' }}
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Configure Git Identity
+        run: |
+          if [[ -n "${{ steps.app-token.outputs.app-slug }}" ]]; then
+            # Use GitHub App bot identity
+            git config user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+            git config user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+          else
+            # Fall back to GitHub Actions default bot
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          fi
+
+      - name: Validate source branch exists
+        run: |
+          set -euo pipefail
+
+          if ! git ls-remote --exit-code --heads origin "${{ inputs.source_branch }}" >/dev/null; then
+            echo "Branch does not exist: ${{ inputs.source_branch }}"
+            exit 1
+          fi
+
+      - name: Validate branch naming convention
+        run: |
+          set -euo pipefail
+
+          SOURCE="${{ inputs.source_branch }}"
+          TARGET="${{ inputs.target_type }}"
+
+          if [[ "$TARGET" == "qa" ]]; then
+            if [[ ! "$SOURCE" =~ ^dev\/[a-zA-Z0-9._-]+$ ]]; then
+              echo "❌ Invalid dev branch format."
+              echo "Expected: dev/feature-name"
+              echo "Received: $SOURCE"
+              exit 1
+            fi
+          fi
+
+          if [[ "$TARGET" == "beta" ]]; then
+            if [[ ! "$SOURCE" =~ ^qa\/[a-zA-Z0-9._-]+$ ]]; then
+              echo "❌ Invalid QA branch format."
+              echo "Expected: qa/feature-name"
+              echo "Received: $SOURCE"
+              exit 1
+            fi
+          fi
+
+          echo "✅ Branch naming convention validated successfully."
+
+      # -------------------------------------
+      # DEV -> QA
+      # -------------------------------------
+      - name: Create QA Branch
+        if: inputs.target_type == 'qa'
+        run: |
+          set -euo pipefail
+
+          SOURCE="${{ inputs.source_branch }}"
+          TARGET="qa/${SOURCE#dev/}"
+
+          if git ls-remote --exit-code --heads origin "$TARGET" >/dev/null; then
+            echo "QA branch already exists: $TARGET"
+            exit 1
+          fi
+
+          git fetch origin "$SOURCE"
+          git checkout -b "$TARGET" "origin/$SOURCE"
+          git push origin "$TARGET"
+
+      # -------------------------------------
+      # QA -> BETA
+      # -------------------------------------
+      - name: Create Beta PR
+        if: inputs.target_type == 'beta'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          SOURCE="${{ inputs.source_branch }}"
+
+          EXISTING=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --base main \
+            --head "$SOURCE" \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$EXISTING" ]; then
+            echo "PR already exists: #$EXISTING"
+            exit 1
+          fi
+
+          PR_BODY="$(cat <<EOF
+          ### 📦 Beta Release Promotion
+
+          This pull request was **auto-generated** to promote the QA branch:
+
+          - **Source Branch:** $SOURCE  
+          - **Target Branch:** \`main\`
+
+          Once merged, this PR will trigger the **Beta → Production** workflows, ensuring that tested features are safely promoted to the mainline.
+
+          ---
+
+          ⚠️ Please review carefully before merging to maintain release integrity.
+          EOF
+          )"
+
+          # Normalize whitespace
+          PR_BODY="$(printf "%s" "$PR_BODY" | tr '\t' ' ' | sed 's/  */ /g; s/^ *//; s/ *$//')"
+
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --base main \
+            --head "$SOURCE" \
+            --title "Beta Release: $SOURCE" \
+            --label beta-release \
+            --body "$PR_BODY"

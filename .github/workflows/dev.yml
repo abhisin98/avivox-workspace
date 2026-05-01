@@ -1,0 +1,53 @@
+name: Dev Deployment
+
+concurrency:
+  # Ensures only one workflow run per branch/event group at a time
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true # Cancels in-progress runs of the same group when a new one starts
+
+on:
+  push:
+    branches:
+      - "dev/*"
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v6
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Run CI Action
+        uses: ./.github/actions/ci
+
+  # deploy-web:
+  #   name: Deploy Web (Dev)
+  #   needs: ci
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check out code # Fetches the latest code from the repository.
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup # Executes setup scripts for dependencies.
+  #       uses: ./.github/actions/setup
+
+  #     - name: Deploy (Devlopment)
+  #       run: echo "Deploy Web in environment dev"
+
+  # publish-packages:
+  #   name: Publish Packages (Dev)
+  #   needs: ci
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check out code # Fetches the latest code from the repository.
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup # Executes setup scripts for dependencies.
+  #       uses: ./.github/actions/setup
+
+  #     - name: Publish Packages (Devlopment)
+  #       run: echo "Publish Packages with tag dev"

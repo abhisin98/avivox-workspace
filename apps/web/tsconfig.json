@@ -1,0 +1,21 @@
+{
+  "extends": "@avivox/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "strict": true,
+    "allowJs": true,
+    //
+    "noUnusedParameters": false,
+    "noUnusedLocals": false,
+    "noImplicitOverride": false,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitReturns": false,
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "next-env.d.ts",
+    "next.config.ts",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"],
+}

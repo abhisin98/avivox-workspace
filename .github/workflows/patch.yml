@@ -1,0 +1,84 @@
+name: Patch Deployment
+
+env:
+  # Environment Variables:
+  # - Used to configure settings such as database connections and API keys.
+  # - It's best to store sensitive values in GitHub Secrets for security.
+  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }} # get this in account settings "https://railway.com/account/tokens" (make sure this is NOT a project token), and scope it to your account (not a workspace)
+  RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }} # project ID
+  RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENVIRONMENT_ID }} # railway environment to duplicate from
+  RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }} # service ID to inject database variable into
+  # RAILWAY_WORKSPACE_ID: ${{ secrets.RAILWAY_WORKSPACE_ID }} # if you are linking to a project in a workspace, uncomment this
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # npm registry token for publishing packages
+
+concurrency:
+  # Ensures only one workflow run per branch/event group at a time
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true # Cancels in-progress runs of the same group when a new one starts
+
+on:
+  push:
+    branches:
+      - "patch/*"
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v6
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Run CI Action
+        uses: ./.github/actions/ci
+
+  deploy-web:
+    name: Deploy Web (Patch)
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v6
+
+      - name: Deploy Hotfix (Production)
+        id: deploy
+        uses: ./.github/actions/railway-deploy
+        with:
+          api-token: ${{ env.RAILWAY_API_TOKEN }}
+          project-id: ${{ env.RAILWAY_PROJECT_ID }}
+          environment-id: ${{ env.RAILWAY_ENVIRONMENT_ID }}
+          service-id: ${{ env.RAILWAY_SERVICE_ID }}
+
+      - name: Deployment Info
+        run: |
+          echo "Deployed at: ${{ steps.deploy.outputs.url }}"
+
+  publish-packages:
+    name: Publish Packages (Patch)
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code # Fetches the latest code from the repository.
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Fetch full history for git-cliff
+
+      - name: Setup # Executes setup scripts for dependencies.
+        uses: ./.github/actions/setup
+
+      - name: Configure npm
+        run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
+
+      - name: Publish Hotfix (Production)
+        uses: ./.github/actions/changelogs
+        with:
+          release-type: patch
+          do-git: "false" # patch releases don't commit (already done in main)
+          create-release: "false" # patch releases don't create GitHub releases
+          do-publish: "true"
+          publish-tool: "pnpm"
+          publish-access: "public"
+          publish-tag: "latest"

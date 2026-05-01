@@ -1,0 +1,26 @@
+{
+  "Test new it snippet": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,",
+    "prefix": "ati",
+    "body": ["", "it(\"test: write new test\", () => {", "  $1", "", "  //? expect", "  expect(true).toBeDefined();", "});", ""],
+    "description": "Test new it snippet",
+  },
+  "Test new describe snippet": {
+    "scope": "javascript,typescript,javascriptreact,typescriptreact,",
+    "prefix": "atd",
+    "body": [
+      "",
+      "// --------------------------------------------------------------------",
+      "describe(\"${TM_FILENAME_BASE/(\\w*)(?:.*)/${1:/pascalcase}/} test\", () => {",
+      "  it(\"test: write new test\", () => {",
+      "    $1",
+      "",
+      "    //? expect",
+      "    expect(true).toBeDefined();",
+      "  });",
+      "});",
+      "",
+    ],
+    "description": "Test describe snippet",
+  },
+}

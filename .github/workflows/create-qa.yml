@@ -1,0 +1,22 @@
+name: Create QA Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      dev_branch:
+        description: "Developer branch (dev/*)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  promote-to-qa:
+    uses: ./.github/workflows/_promotion-engine.yml
+    with:
+      source_branch: ${{ github.event.inputs.dev_branch }}
+      target_type: qa
+      use_github_app: true
+    secrets: inherit

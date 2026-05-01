@@ -1,0 +1,43 @@
+name: "Continuous Integration Action"
+description: "Reusable action for linting, type-checking, testing, and building with pnpm"
+
+inputs:
+  run-lint:
+    description: "Run lint step"
+    required: false
+    default: "true"
+  run-type-check:
+    description: "Run type-check step"
+    required: false
+    default: "true"
+  run-test:
+    description: "Run test step"
+    required: false
+    default: "true"
+  run-build:
+    description: "Run build step"
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Lint ✅
+      if: ${{ inputs.run-lint == 'true' }}
+      run: pnpm lint
+      shell: bash
+
+    - name: Type Check 📝
+      if: ${{ inputs.run-type-check == 'true' }}
+      run: pnpm type-check
+      shell: bash
+
+    - name: Test 🧪
+      if: ${{ inputs.run-test == 'true' }}
+      run: pnpm test
+      shell: bash
+
+    - name: Build 🏗️
+      if: ${{ inputs.run-build == 'true' }}
+      run: pnpm build
+      shell: bash

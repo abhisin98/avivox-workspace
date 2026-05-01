@@ -1,0 +1,10 @@
+{
+  "extends": "@avivox/typescript-config/react.json",
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "types": ["jest"]
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "build"]
+}

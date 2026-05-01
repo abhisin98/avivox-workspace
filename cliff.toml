@@ -1,0 +1,125 @@
+# cliff.toml
+# Avivox Workspace — Strict Conventional Commit + Vercel-Style Changelog
+
+[changelog]
+header = """
+# 🚀 Changelog
+
+All notable changes to this project will be documented in this file.
+"""
+
+body = """
+{% if version %}
+## [{{ version | split(pat="@") | last | split(pat="-") | first }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}
+## [Unreleased]
+{% endif %}
+
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group }}
+
+{% for commit in commits %}
+- {% if commit.scope %}**{{ commit.scope }}:** {% endif %}{{ commit.message | upper_first }} ({{ commit.id | truncate(length=7, end="") }})
+{% endfor %}
+
+{% endfor %}
+"""
+
+footer = """
+---
+Generated with git-cliff
+"""
+
+trim = true
+postprocessors = [
+  # remove PR numbers like (#123)
+  { pattern = ' \\(#\\d+\\)', replace = "" },
+  # collapse extra blank lines
+  { pattern = '\n{3,}', replace = "\n\n" }
+]
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+require_conventional = true
+split_commits = false
+processing_order = [
+  "commit_preprocessors",
+  "split_commits",
+  "conventional_commits",
+  "commit_parsers",
+  "link_parsers",
+]
+commit_preprocessors = [
+  # normalize whitespace
+  { pattern = '\\s+', replace = " " }
+]
+# -----------------------------
+# Commit Parsers / Section Mapping
+# Order matters: first match wins
+# -----------------------------
+commit_parsers = [
+
+  # BREAKING CHANGES FIRST
+  { message = ".*BREAKING CHANGE.*", group = "⚠️ Breaking Changes" },
+  { message = "^[a-z]+(\\(.+\\))?!:.*", group = "⚠️ Breaking Changes" },
+
+  # Standard Features
+  { message = "^feat(\\(.+\\))?:.*", group = "🆕 Features" },
+
+  # Fixes
+  { message = "^fix(\\(.+\\))?:.*", group = "🐛 Fixes" },
+
+  # Performance
+  { message = "^perf(\\(.+\\))?:.*", group = "⚡ Performance" },
+
+  # Refactor
+  { message = "^refactor(\\(.+\\))?:.*", group = "🔧 Refactoring" },
+
+  # Docs
+  { message = "^docs(\\(.+\\))?:.*", group = "📚 Documentation" },
+
+  # Build
+  { message = "^build(\\(.+\\))?:.*", group = "🏗️ Build System" },
+
+  # CI
+  { message = "^ci(\\(.+\\))?:.*", group = "🔄 CI/CD" },
+
+  # Chore
+  { message = "^chore\\(release\\):.*", skip = true },
+  { message = "^chore(\\(.+\\))?:.*", group = "🧹 Chores" },
+
+  # Revert
+  { message = "^revert(\\(.+\\))?:.*", group = "⏪ Reverts" },
+
+  # Ignore Noise
+  { message = "^style(\\(.+\\))?:.*", skip = true },
+  { message = "^test(\\(.+\\))?:.*", skip = true },
+  { message = "^Merge .*", skip = true },
+  { message = "^wip.*", skip = true },
+  { message = "^release.*", skip = true }
+]
+protect_breaking_commits = true
+tag_pattern = "^.+@[0-9]+\\.[0-9]+\\.[0-9]+(?:-(beta|canary)\\.[0-9A-Za-z.-]+)?$"
+skip_tags = "^.+@[0-9]+\\.[0-9]+\\.[0-9]+-(beta|canary)\\..*$"
+ignore_tags = ""
+topo_order = false
+sort_commits = "oldest"
+# -----------------------------
+# Monorepo Linking
+# -----------------------------
+link_parsers = [
+  { pattern = "#(\\d+)", href = "https://github.com/abhisin98/avivox-workspace/issues/$1" }
+]
+
+# -----------------------------
+# Remote
+# -----------------------------
+[remote.github]
+owner = "abhisin98"
+repo = "avivox-workspace"
+
+[bump]
+features_always_bump_minor = true
+breaking_always_bump_major = true
+initial_tag = "package@1.0.0"

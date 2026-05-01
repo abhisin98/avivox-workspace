@@ -1,0 +1,26 @@
+{
+  "name": "@avivox/eslint-config",
+  "version": "0.0.0",
+  "license": "MIT",
+  "main": "default.js",
+  "files": [
+    "default.js",
+    "graphql.js",
+    "native.js",
+    "node.js",
+    "react.js"
+  ],
+  "dependencies": {
+    "@graphql-eslint/eslint-plugin": "^4.4.0",
+    "eslint-config-universe": "^15.0.3"
+  },
+  "peerDependencies": {
+    "eslint": ">=8.51",
+    "prettier": ">=3.0"
+  },
+  "peerDependenciesMeta": {
+    "prettier": {
+      "optional": true
+    }
+  }
+}
