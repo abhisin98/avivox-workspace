@@ -75,8 +75,147 @@ We follow a structured branching strategy to manage deployments across different
 - **`main`**: The production branch. Merging here triggers CI checks and production deployment.
 - **`dev/*`**: Development branches (e.g., `dev/feature-name`). Used for initial development and testing. Triggers deployment to the development environment.
 - **`qa/*`**: QA branches (e.g., `qa/feature-name`). Used for quality assurance testing. Triggers deployment to the QA environment.
-- **`patch/*`**: Hotfix branches (e.g., `patch/security-fix`). Used for urgent production fixes. Triggers patch deployment directly to production.
+- **`patch/*`**: Hotfix branches (e.g., `patch/security-fix`). Used for urgent production fixes. Triggers patch deployment directly to production. Only repo admins can create.
 - **Pull Requests to `main`**: Triggers beta deployment for staging and final testing before production.
+
+## Branch Protection Rules Setup
+
+To enforce code quality and control access across branches, configure GitHub branch protection rulesets. This ensures all code follows the branching strategy and only authorized personnel can perform specific actions.
+
+### Important: GitHub App Setup is Required
+
+Before setting up branch protection rules, **you must configure the GitHub App and secrets**. This is essential because:
+
+1. **Main Branch Protection**: When code is merged to `main`, the production deployment workflow needs authentication to:
+   - Create git tags and GitHub releases
+   - Publish packages to npm
+   - Create commits with changelog information
+   - All of these require `APP_CLIENT_ID` and `APP_PRIVATE_KEY` secrets
+
+2. **QA/Dev/Patch Workflows**: Workflows that run on these branches use the GitHub App to:
+   - Perform git operations (commits, branch creation)
+   - Create pull requests automatically
+   - Update repository state
+
+3. **Without GitHub App Setup**:
+   - Workflows will fall back to `github-actions[bot]` (less secure)
+   - PR comments and branch creation may not work properly
+   - Git history attribution won't show the proper bot identity
+
+**See the "Required GitHub Secrets" section below to set up your GitHub App BEFORE creating branch protection rules.**
+
+### Overview of Protection Rules
+
+| Branch | Who Can Create | Status Checks | Reviews | Direct Push | Signatures |
+|--------|---|---|---|---|---|
+| **main** | PR only | ✅ Required | ✅ 1+ approval | ❌ No | ✅ Required |
+| **patch/** | Admins only | ✅ Required | ❌ None | ✅ Yes (prod) | ✅ Required |
+| **qa/** | QA team only | ✅ Required | ✅ 1+ approval | ❌ No | ✅ Required |
+| **dev/** | Anyone | ✅ Required | ❌ None | ✅ Yes | ❌ Optional |
+
+### Step-by-Step Setup Instructions
+
+#### Prerequisites
+
+1. Create GitHub teams in your organization:
+   - `qa-team` - QA team members
+   - `admins` - Repository administrators
+
+2. Create template branches for each pattern (so rules are applied to existing branches):
+   ```bash
+   git checkout -b dev/initial-setup && git push -u origin dev/initial-setup
+   git checkout -b qa/v1.0.0 && git push -u origin qa/v1.0.0
+   git checkout -b patch/v1.0.1 && git push -u origin patch/v1.0.1
+   ```
+
+#### Creating Rulesets
+
+Navigate to **Settings → Rules → Rulesets** and click **New ruleset** for each of the following:
+
+**RULESET 1: Main Branch (Production)**
+
+1. **Ruleset Name:** `Protect Main Branch`
+2. **Enhancement Status:** Enabled
+3. **Target Branches:** Add pattern `main`
+4. **Enable Rules:**
+   - ✅ Restrict creations (Admins & maintainers only)
+   - ✅ Restrict updates (Admins & maintainers only)
+   - ✅ Restrict deletions (Admins & maintainers only)
+   - ✅ Require linear history
+   - ✅ Require signed commits
+   - ✅ Require status checks: `ci / lint`, `ci / type-check`, `ci / test`, `ci / build`
+   - ✅ Require pull request before merging (1 approval, dismiss stale reviews, require code owner review)
+   - ✅ Block force pushes
+5. **Create Ruleset**
+
+**RULESET 2: Patch/* (Hotfix - Admins Only)**
+
+1. **Ruleset Name:** `Protect Patch Hotfix Branch`
+2. **Enhancement Status:** Enabled
+3. **Target Branches:** Add pattern `patch/*`
+4. **Enable Rules:**
+   - ✅ Restrict creations (Specific actors → Admins & maintainers only)
+   - ✅ Restrict updates (Specific actors → Admins & maintainers only)
+   - ✅ Restrict deletions (Specific actors → Admins & maintainers only)
+   - ✅ Require signed commits
+   - ✅ Require status checks: `ci / lint`, `ci / type-check`, `ci / test`, `ci / build`
+   - ❌ **Do NOT require pull request** (allows direct deployment to production)
+   - ✅ Block force pushes
+5. **Create Ruleset**
+
+**RULESET 3: QA/* (Testing - QA Team Only)**
+
+1. **Ruleset Name:** `Protect QA Testing Branch`
+2. **Enhancement Status:** Enabled
+3. **Target Branches:** Add pattern `qa/*`
+4. **Enable Rules:**
+   - ✅ Restrict creations (Specific actors → Specific teams → `@{org}/qa-team`)
+   - ✅ Restrict updates (Specific actors → Specific teams → `@{org}/qa-team`)
+   - ✅ Restrict deletions (Specific actors → Specific teams → `@{org}/qa-team`)
+   - ✅ Require signed commits
+   - ✅ Require status checks: `ci / lint`, `ci / type-check`, `ci / test`, `ci / build`
+   - ✅ Require pull request before merging (1 approval, dismiss stale reviews, require code owner review)
+   - ✅ Block force pushes
+5. **Create Ruleset**
+
+**RULESET 4: Dev/* (Development - Anyone)**
+
+1. **Ruleset Name:** `Allow Developer Branches`
+2. **Enhancement Status:** Enabled
+3. **Target Branches:** Add pattern `dev/*`
+4. **Enable Rules:**
+   - ❌ Do not restrict creations
+   - ❌ Do not restrict updates
+   - ❌ Do not restrict deletions
+   - ✅ Require status checks: `ci / lint`, `ci / type-check`, `ci / test`, `ci / build`
+   - ❌ Do not require pull request (developers push directly)
+   - ❌ Do not require signed commits
+5. **Create Ruleset**
+
+#### Code Owners Configuration (Optional)
+
+Create `.github/CODEOWNERS` file to automatically assign reviewers:
+
+```
+# QA team approves QA branches
+qa/* @{org}/qa-team
+
+# Admins approve main branch
+main @{org}/admins
+
+# Developers own dev branches
+dev/* @{org}/developers
+```
+
+Replace `{org}` with your organization name (e.g., `abhisin98`).
+
+### Verification
+
+After creating all rulesets, verify in **Settings → Rules → Rulesets** that:
+- ✅ All 4 rulesets are listed and **Enabled**
+- ✅ Each targets the correct branch pattern
+- ✅ Status checks show "ci / lint, ci / type-check, ci / test, ci / build"
+- ✅ main and patch/* have appropriate creation/update restrictions
 
 ## How Each Workflow Works
 
@@ -153,6 +292,8 @@ We follow a structured branching strategy to manage deployments across different
 
 ## Required GitHub Secrets
 
+**⚠️ IMPORTANT: Set up GitHub App secrets BEFORE creating branch protection rules. These are required for all workflows to function properly.**
+
 The following secrets can be configured in your GitHub repository settings under "Secrets and variables > Actions":
 
 **GitHub App Secrets** (Optional - enhances security and attribution):
@@ -204,6 +345,8 @@ The following secrets can be configured in your GitHub repository settings under
    - Click **Install**
 
 Your GitHub App is now configured for all CI/CD operations including branch promotion, deployments, PR comments, and changelog generation!
+
+**After GitHub App setup, you can now proceed to create branch protection rules** (see "Branch Protection Rules Setup" section below).
 
 **Railway Deployment & Package Publishing Secrets** (used by beta.yml, prod.yml, patch.yml, beta-cleanup.yml):
 
