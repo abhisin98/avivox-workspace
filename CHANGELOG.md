@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2026-05-02
+
+### 📚 Documentation
+
+- **ci:** Add comprehensive CI/CD workflow guide for developers and QA (841deae)
+
+
 ## [1.0.1] - 2026-05-01
 
 ### 🐛 Fixes
