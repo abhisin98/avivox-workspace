@@ -32,7 +32,7 @@ We have **4 types of branches**:
 | `main` | Production (live app) | CI checks → Staging test → Production deploy | **STRICT** - needs review |
 | `dev/*` | Development (daily work) | CI checks run | **MINIMAL** - for fast development |
 | `qa/*` | Testing (before production) | CI checks run | **MINIMAL** - for testing |
-| `patch/*` | Emergency fixes (urgent production fixes) | CI checks → Production deploy | **STRICT for main** |
+| `patch/*` | Emergency fixes (urgent production fixes) | CI checks → Production deploy | **STRICT** |
 
 **How code flows:**
 ```
@@ -101,16 +101,8 @@ Click **Add rule** (in the same Branch protection rules section)
 
 **Protect matching branches:**
 
-- ✅ Check: **Require a pull request before merging** (optional for small teams)
-  - If checked: Set **Require approvals** to **1** (not strict)
-  - Uncheck: **Dismiss stale pull request approvals...** (not needed for dev)
-
 - ≈ **OPTIONAL**: Require status checks (does NOT block if checks fail)
   - This is just a warning, not a blocker, so developers can still push fast
-
-- ❌ **Do NOT check**: Require linear history (too strict for dev)
-
-- ❌ **Do NOT check**: Administrator force pushes (allow team flexibility here)
 
 **Allow bypasses by:**
 
@@ -136,14 +128,12 @@ Click **Add rule**
 
 - ✅ Check: **Require linear history** (optional, keeps git history clean)
 
-- ✅ Check: **Require a pull request before merging**
+- ✅ Check: **Require a pull request before merging** (optional)
   - ✅ Check: **Require approvals** (set to **1 or 2** for small teams)
 
 - ✅ Check: **Require status checks to pass**
   - First, create one successful workflow run, then select it here
   - Look for: `CI` (the linting, testing, type-checking job)
-
-- ✅ Check: **Block force pushes**
 
 - ❌ **Do NOT** make this too strict. It's still a testing branch.
 
@@ -157,7 +147,7 @@ Click **Add rule**
 
 ### 4. Protect `patch/*` Branches (Hotfixes)
 
-These are emergency fixes. Use **main's protection rules**.
+These are emergency fixes.
 
 #### Step-by-Step Setup
 
@@ -177,11 +167,6 @@ Click **Add rule**
 
 - ✅ Check: **Require linear history** (optional, keeps git history clean)
 
-- ✅ Check: **Require a pull request before merging**
-  - ✅ Check: **Require approvals** (set to **1 or 2** for small teams)
-  - ✅ Check: **Dismiss stale pull request approvals when new commits are pushed**
-  - ✅ Check: **Require review from Code Owners** (optional for small teams)
-
 - ✅ Check: **Require status checks to pass**
   - ✅ Check: **Require branches to be up to date before merging**
   - First, create one successful workflow run, then select it here
@@ -189,11 +174,13 @@ Click **Add rule**
 
 - ✅ Check: **Block force pushes**
 
+- ❌ Do NOT require pull request before merging (patch branches deploy directly for emergencies)
+
 **Allow bypasses by:**
 
 - ✅ Check: **Allow bypasses by:** → Select **Administrators** ✅
 
-**Why?** Because `patch/*` goes straight to production. It's as critical as `main`.
+**Why?** Because `patch/*` deploys directly to production, so strong protections are needed even without normal PR flow.
 
 ---
 
@@ -218,7 +205,7 @@ A **GitHub App** is an automated bot that your team uses to:
 **Why add it?**
 
 - It performs automated releases and branch promotions
-- It must commit to `main` without being blocked
+- It may need permission for automated release commits or branch promotions
 - Without bypass, your automation breaks
 
 **How to add it?**
@@ -324,55 +311,6 @@ For a **small team of 3-5 people**, here's a simple breakdown:
 ❌ **Do NOT** require pull request reviews on `dev/*` branches (in most cases)
 - It slows down development
 - Use code review for QA and production
-
----
-
-## Summary: Quick Setup Guide
-
-### 1. Set up `main` branch protection (STRICT)
-
-```
-Pattern: main
-☑ Restrict creations / updates / deletions
-☑ Require PR + 1-2 Approvals
-☑ Require status checks (CI)
-☑ Require branches up to date
-☑ Block force pushes
-☑ Allow GitHub Apps to bypass
-☑ Allow Administrators to bypass
-```
-
-### 2. Set up `dev/*` branch protection (MINIMAL)
-
-```
-Pattern: dev/*
-☐ Optional: PR + 1 Approval (for knowledge sharing)
-☐ Optional: Status checks (warning only, not blocking)
-☑ Allow all team members to push directly
-```
-
-### 3. Set up `qa/*` branch protection (MINIMAL)
-
-```
-Pattern: qa/*
-☑ Restrict deletions
-☑ Require PR + 1-2 Approvals
-☑ Require status checks (CI)
-☑ Block force pushes
-☑ Allow GitHub Apps to bypass
-```
-
-### 4. Set up `patch/*` branch protection (STRICT)
-
-```
-Pattern: patch/*
-☑ Restrict creations / updates / deletions
-☑ Require PR + 1-2 Approvals
-☑ Require status checks (CI)
-☑ Require branches up to date
-☑ Block force pushes
-☑ Allow Administrators to bypass
-```
 
 ---
 
