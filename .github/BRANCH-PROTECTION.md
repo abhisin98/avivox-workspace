@@ -36,7 +36,7 @@ We have **4 types of branches**:
 
 **How code flows:**
 ```
-dev/feature → Create QA Branch → qa/feature → Pull Request to main → main ✅ Live!
+dev/feature → PR dev→qa → QA review/tests → Bug fixes → QA merge → PR qa→main → main ✅ Live!
 ```
 
 ---
@@ -112,7 +112,7 @@ Click **Add rule** (in the same Branch protection rules section)
 
 ### 3. Protect `qa/*` Branches (Testing)
 
-QA branches are for quality assurance.
+QA branches are for quality assurance testing. Developers create PRs from dev branches to qa branches, and QA team reviews, tests, and approves these PRs before merging.
 
 #### Step-by-Step Setup
 
@@ -128,20 +128,26 @@ Click **Add rule**
 
 - ✅ Check: **Require linear history** (optional, keeps git history clean)
 
-- ✅ Check: **Require a pull request before merging** (optional)
-  - ✅ Check: **Require approvals** (set to **1 or 2** for small teams)
+- ✅ Check: **Require a pull request before merging**
+  - ✅ Check: **Require approvals** (set to **1** - QA team approval required)
+  - ✅ Check: **Dismiss stale pull request approvals when new commits are pushed**
+  - ✅ Check: **Restrict merges** → Allow merging only when requirements are met
 
 - ✅ Check: **Require status checks to pass**
   - First, create one successful workflow run, then select it here
   - Look for: `CI` (the linting, testing, type-checking job)
 
-- ❌ **Do NOT** make this too strict. It's still a testing branch.
+- ✅ Check: **Block force pushes**
 
 **Allow bypasses by:**
 
 - ✅ Check: **Allow bypasses by:** → Select **GitHub Apps** ✅
 
   ⚠️ **Important:** See section "GitHub App Bypass Rules" below for why.
+
+**Note:** QA branches accept PRs from corresponding `dev/*` branches. QA team must approve all merges after thorough testing.
+
+**Do not add QA team members or developers to the bypass list.** The bypass entry is for automation only, not for manual approval bypass.
 
 ---
 
@@ -215,7 +221,9 @@ When editing the `main` branch protection rule:
 1. Scroll to: **Allow bypasses by:**
 2. ✅ Check: **GitHub Apps**
 
-This allows **any GitHub App** configured in your repo to bypass the review requirement.
+This allows **any GitHub App** configured in your repo to bypass the review requirement for automated workflows.
+
+**Important:** This bypass is for automation only. Human QA or development team members should not be added to bypass lists for `qa/*` or `main` protections.
 
 ### Is This Safe?
 
@@ -271,8 +279,9 @@ For a **small team of 3-5 people**, here's a simple breakdown:
 
 | Role | GitHub Role | What they do | Can bypass `main` protection? |
 |------|-------------|-------------|------------------------------|
-| **Developer** | "Member" | Writes code, creates PRs, reviews PRs | No ❌ |
-| **Maintainer** | "Maintain" | Merges PRs, manages branches | No ❌ (unless needed) |
+| **Developer** | "Member" | Writes code in `dev/*` branches, creates PRs to `qa/*`, fixes bugs | No ❌ |
+| **QA Team Member** | "Maintain" | Reviews PRs to `qa/*` branches, tests code, approves/merges to `qa/*`, creates PRs to `main` | No ❌ |
+| **Dev Team Reviewer** | "Maintain" | Reviews PRs to `main`, merges approved production PRs | No ❌ |
 | **Tech Lead / Admin** | "Admin" | Can override rules in emergencies, manages configs | Yes ✅ (emergency only) |
 | **GitHub App Bot** | N/A | Automates releases and branches | Yes ✅ (for automation) |
 
@@ -284,7 +293,8 @@ For a **small team of 3-5 people**, here's a simple breakdown:
 4. Select new role: `Triage`, `Write`, `Maintain`, or `Admin`
 
 **For a small team:**
-- Most people: `Maintain` role (good balance)
+- Developers: `Write` or `Maintain` role (can create branches and PRs)
+- QA team: `Maintain` role (can create branches, approve PRs)
 - Tech lead: `Admin` role (for emergencies)
 - Never give everyone admin (security risk)
 
@@ -292,12 +302,14 @@ For a **small team of 3-5 people**, here's a simple breakdown:
 
 ## Checklist: What NOT to Do
 
-❌ **Do NOT** add branch protection to `dev/*` and `qa/*` that's too strict
-- Your team needs to iterate fast during development
-- Too many rules = frustration and workarounds
+❌ **Do NOT** add branch protection to `dev/*` branches that's too strict
+- Development should be flexible for fast iteration
 
-❌ **Do NOT** require admin approval on dev branches
-- Development should be flexible
+❌ **Do NOT** remove PR requirements from `qa/*` branches
+- QA branches should require approval for bug fix merges
+
+❌ **Do NOT** allow direct pushes to `qa/*` branches
+- All changes to QA branches should come through approved PRs
 
 ❌ **Do NOT** enable "Require branches to be up to date" on dev branches
 - It slows down development
@@ -308,9 +320,8 @@ For a **small team of 3-5 people**, here's a simple breakdown:
 ❌ **Do NOT** give everyone admin access
 - Security risk; only for tech leads
 
-❌ **Do NOT** require pull request reviews on `dev/*` branches (in most cases)
-- It slows down development
-- Use code review for QA and production
+✅ **DO** require pull request reviews on `qa/*` branches
+- Ensures QA approval for all bug fixes
 
 ---
 
