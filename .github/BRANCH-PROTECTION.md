@@ -135,6 +135,8 @@ Click **Add rule**
   - First, create one successful workflow run, then select it here
   - Look for: `CI` (the linting, testing, type-checking job)
 
+- ✅ Check: **Block force pushes**
+
 - ❌ **Do NOT** make this too strict. It's still a testing branch.
 
 **Allow bypasses by:**
