@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2026-05-03
+
+### 📚 Documentation
+
+- **docs:** Modernize branch protection guide for github rulesets (f32cb87)
+
+- **docs:** Update branch protection guide for github rulesets setup (82d0ee0)
+
+
 ## [1.0.2] - 2026-05-02
 
 ### 📚 Documentation
