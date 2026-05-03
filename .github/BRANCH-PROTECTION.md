@@ -49,36 +49,36 @@ Your **production branch** needs the most protection. Here's the simple checklis
 
 #### Step-by-Step Setup
 
-1. Go to your GitHub repository
-2. Click **Settings** (top right menu)
-3. Go to **Branches** (left sidebar)
-4. Under "Branch protection rules", click **Add rule**
-5. Fill in the following:
+Navigate to **Settings → Rules → Rulesets** and click **New ruleset** for each of the following:
 
-**Pattern name:** → Enter: `main`
+- **Ruleset Name:** `Protect Main Branch`
+- **Enhancement Status:** Enabled
+- **Target Branches:** Add pattern `main`
 
 **Protect matching branches:**
+- ✅ Check: **Restrict creations**
+
+- ✅ Check: **Restrict updates**
+
+- ✅ Check: **Restrict deletions**
+
+- ✅ Check: **Require linear history** (optional, keeps git history clean)
+
 - ✅ Check: **Require a pull request before merging**
   - ✅ Check: **Require approvals** (set to **1 or 2** for small teams)
   - ✅ Check: **Dismiss stale pull request approvals when new commits are pushed**
   - ✅ Check: **Require review from Code Owners** (optional for small teams)
 
-- ✅ Check: **Require status checks to pass before merging**
+- ✅ Check: **Require status checks to pass**
+  - ✅ Check: **Require branches to be up to date before merging**
   - First, create one successful workflow run, then select it here
-  - Look for: `CI` (the linting, testing, type-checking job)
+  - Look for: `CI` (the linting, testing, type-checking job), `Deploy Web (Beta)`, `Publish Packages (Beta)`
 
-- ✅ Check: **Require branches to be up to date before merging**
-
-- ✅ Check: **Require linear history** (optional, keeps git history clean)
-
-- ✅ Check: **Allow force pushes** → Choose **Allow force pushes** for: **Administrators only** (or leave disabled)
+- ✅ Check: **Block force pushes**
 
 - ✅ Check: **Require code scanning results** (optional, if you use code scanning tools)
 
-- ❌ **Do NOT check**: "Require pull request reviews to be stale"
-
 **Allow bypassing the above settings:**
-
 - ✅ Check: **Allow bypasses by:** → Select **Administrators** ✅
 
 - ✅ Check: **Allow bypasses by:** → Select **GitHub Apps** ✅
@@ -93,8 +93,11 @@ Dev branches should be **quick and flexible** for your team. Minimal rules.
 
 #### Step-by-Step Setup
 
-1. Click **Add rule** (in the same Branch protection rules section)
-2. Pattern name → Enter: `dev/*`
+Click **Add rule** (in the same Branch protection rules section)
+
+- **Ruleset Name:** `Protect Dev Branch`
+- **Enhancement Status:** Enabled
+- **Target Branches:** Add pattern `dev/*`
 
 **Protect matching branches:**
 
@@ -117,23 +120,38 @@ Dev branches should be **quick and flexible** for your team. Minimal rules.
 
 ### 3. Protect `qa/*` Branches (Testing)
 
-QA branches are for quality assurance. Similar to dev but can be slightly stricter.
+QA branches are for quality assurance.
 
 #### Step-by-Step Setup
 
-1. Click **Add rule**
-2. Pattern name → Enter: `qa/*`
+Click **Add rule**
+
+- **Ruleset Name:** `Protect QA Branch`
+- **Enhancement Status:** Enabled
+- **Target Branches:** Add pattern `qa/*`
 
 **Protect matching branches:**
 
-- ≈ **OPTIONAL**: Same as dev rules (minimal)
-  - You can copy the dev/* rules here
+- ✅ Check: **Restrict deletions**
+
+- ✅ Check: **Require linear history** (optional, keeps git history clean)
+
+- ✅ Check: **Require a pull request before merging**
+  - ✅ Check: **Require approvals** (set to **1 or 2** for small teams)
+
+- ✅ Check: **Require status checks to pass**
+  - First, create one successful workflow run, then select it here
+  - Look for: `CI` (the linting, testing, type-checking job)
+
+- ✅ Check: **Block force pushes**
 
 - ❌ **Do NOT** make this too strict. It's still a testing branch.
 
 **Allow bypasses by:**
 
-- Leave this section **empty** (all team members should be able to push here)
+- ✅ Check: **Allow bypasses by:** → Select **GitHub Apps** ✅
+
+  ⚠️ **Important:** See section "GitHub App Bypass Rules" below for why.
 
 ---
 
@@ -143,12 +161,37 @@ These are emergency fixes. Use **main's protection rules**.
 
 #### Step-by-Step Setup
 
-1. Click **Add rule**
-2. Pattern name → Enter: `patch/*`
+Click **Add rule**
+
+- **Ruleset Name:** `Protect Patch Hotfix Branch`
+- **Enhancement Status:** Enabled
+- **Target Branches:** Add pattern `patch/*`
 
 **Protect matching branches:**
 
-- Apply the **same rules as `main`** (strict review, CI checks required)
+- ✅ Check: **Restrict creations**
+
+- ✅ Check: **Restrict updates**
+
+- ✅ Check: **Restrict deletions**
+
+- ✅ Check: **Require linear history** (optional, keeps git history clean)
+
+- ✅ Check: **Require a pull request before merging**
+  - ✅ Check: **Require approvals** (set to **1 or 2** for small teams)
+  - ✅ Check: **Dismiss stale pull request approvals when new commits are pushed**
+  - ✅ Check: **Require review from Code Owners** (optional for small teams)
+
+- ✅ Check: **Require status checks to pass**
+  - ✅ Check: **Require branches to be up to date before merging**
+  - First, create one successful workflow run, then select it here
+  - Look for: `CI` (the linting, testing, type-checking job)
+
+- ✅ Check: **Block force pushes**
+
+**Allow bypasses by:**
+
+- ✅ Check: **Allow bypasses by:** → Select **Administrators** ✅
 
 **Why?** Because `patch/*` goes straight to production. It's as critical as `main`.
 
@@ -290,9 +333,11 @@ For a **small team of 3-5 people**, here's a simple breakdown:
 
 ```
 Pattern: main
+☑ Restrict creations / updates / deletions
 ☑ Require PR + 1-2 Approvals
 ☑ Require status checks (CI)
 ☑ Require branches up to date
+☑ Block force pushes
 ☑ Allow GitHub Apps to bypass
 ☑ Allow Administrators to bypass
 ```
@@ -310,14 +355,23 @@ Pattern: dev/*
 
 ```
 Pattern: qa/*
-Same as dev/* - keep it loose for testing
+☑ Restrict deletions
+☑ Require PR + 1-2 Approvals
+☑ Require status checks (CI)
+☑ Block force pushes
+☑ Allow GitHub Apps to bypass
 ```
 
 ### 4. Set up `patch/*` branch protection (STRICT)
 
 ```
 Pattern: patch/*
-Same as main - it goes to production
+☑ Restrict creations / updates / deletions
+☑ Require PR + 1-2 Approvals
+☑ Require status checks (CI)
+☑ Require branches up to date
+☑ Block force pushes
+☑ Allow Administrators to bypass
 ```
 
 ---
