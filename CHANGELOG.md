@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-05-05
+
+### 🆕 Features
+
+- **ci:** Add automated dev to qa branch creation and pull request flow (856a410)
+
+
 ## [1.0.3] - 2026-05-03
 
 ### 📚 Documentation
