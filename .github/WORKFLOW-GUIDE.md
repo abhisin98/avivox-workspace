@@ -187,48 +187,64 @@ git push origin dev/my-feature
 **What happens automatically:**
 - CI checks run (lint, tests)
 - If tests fail → see error messages in GitHub
-- If tests pass ✅ → ready to promote
+- If tests pass ✅ → run the Create QA Branch workflow to start QA testing
 
-**NOTE:** Beta branch deployments are disabled for dev branches (we keep it light for speed).
+**NOTE:** Dev branches are for development only. QA team handles testing on separate qa/ branches.
 
 ---
 
 ### **🟩 QA Branch — Quality Assurance Testing**
 
-**Step 1: Create a QA branch from dev** (automatic promotion)
+**Step 1: Developer pushes dev branch and runs the QA workflow**
 
-In GitHub UI:
-1. Go to **Actions** tab
-2. Click **Create QA Branch** workflow
-3. Enter: `dev/my-feature`
-4. Click **Run workflow**
-
-Behind the scenes:
-- `dev/my-feature` → Creates `qa/my-feature` automatically
-- QA branch is pushed to GitHub
-
-**Step 2: Test on QA branch**
-
-```bash
-# Pull the new QA branch
-git fetch origin
-git checkout qa/my-feature
-# Run tests locally if needed
-```
+Developer:
+1. Creates `dev/my-feature` branch and writes code
+2. Self-tests the code locally
+3. Runs the **Create QA Branch** workflow with `dev/my-feature`
 
 **What happens automatically:**
-- CI checks run (same as dev)
-- QA branch is now ready for review
+- The workflow creates `qa/my-feature` from `dev/my-feature`
+- If the QA branch already exists and there are changes, it opens a PR from `dev/my-feature` → `qa/my-feature`
+- CI checks run on the branch and on the PR if it is created
+- QA team gets notified for review
 
-**NOTE:** Deployments are disabled for QA branches too (we keep it fast).
+**Note:** The bypass permission on `qa/*` is only for automation, not for manual QA team approvals. QA must still review and merge PRs through the protected branch workflow.
+
+**Step 2: QA team reviews and tests**
+
+QA team:
+- Reviews the code changes in the PR
+- Tests the feature manually
+- Reports any bugs found back to developer
+
+**Step 3: Developer fixes bugs and updates PR**
+
+Developer:
+- Fixes reported bugs in `dev/my-feature` branch
+- Updates the same PR (or creates new PR if needed)
+- QA team re-reviews and retests
+
+**Step 4: QA team approves and merges**
+
+QA team:
+- Once testing passes, approves the PR
+- Merges the PR to create/update `qa/my-feature` branch
+- The qa branch now has tested, approved code
+
+**Step 5: QA team creates production PR**
+
+QA team:
+- Creates PR from `qa/my-feature` → `main` for production deployment
+- Code review happens on this PR
+- After approval, merge to `main`
 
 ---
 
 ### **🟪 Beta Branch — Staging Preview (via Pull Request)**
 
-**Step 1: Create a beta PR** (automatic promotion)
+**Step 1: QA creates beta PR** (after QA testing passes)
 
-In GitHub UI:
+QA team member:
 1. Go to **Actions** tab
 2. Click **Create Beta Release PR** workflow
 3. Enter: `qa/my-feature`
@@ -238,16 +254,64 @@ Behind the scenes:
 - Creates a PR from `qa/my-feature` → `main`
 - PR title: "Beta Release: qa/my-feature"
 
-**Step 2: Review and test the PR**
+**Step 2: Code review and final testing**
 
 1. Go to **Pull Requests** tab
 2. Find the new PR called "Beta Release: qa/my-feature"
-3. Review the code changes
+3. **Code review** by development team
 4. **Wait for automatic comment** with deployment URL
 5. Click the URL to test in staging
 6. Run final QA tests
 
 **What happens automatically:**
+- Web app deploys to **Railway beta environment**
+- Package publishes to npm with `beta` tag (for testing)
+- Preview URL posted in PR comments
+- You can click and test live
+
+**⚠️ Important:** Don't merge yet unless everything is tested and approved!
+
+---
+
+### **🟥 Production — Live Release**
+
+**Step 1: Merge the beta PR to main**
+
+When code review and testing is complete:
+1. In the PR, click **Merge pull request**
+2. Confirm the merge
+
+**What happens automatically:**
+- All CI checks run again
+- Web app deploys to **production (Railway)**
+- Packages publish to npm with `latest` tag
+- Version is auto-bumped (e.g., 1.0.0 → 1.0.1)
+- GitHub releases created
+- Live for all users! 🎉
+
+**NOTE:** This is the only way to deploy to production (no manual pushes to main allowed).
+
+---
+
+### **🟠 Patch Branches — Emergency Hotfixes**
+
+Use this **only for critical production bugs** that can't wait for the normal flow.
+
+```bash
+# Create patch branch
+git checkout main
+git pull
+git checkout -b patch/critical-bug
+# Fix the bug, commit, push
+git push origin patch/critical-bug
+```
+
+**What happens automatically:**
+- CI checks run
+- Web app deploys directly to **production**
+- Package version bumped as patch (e.g., 1.0.0 → 1.0.1)
+
+**⚠️ Important:** Only use patch/* for true emergencies. Normal fixes should go through dev → qa → beta → prod flow.
 - Web app deploys to **Railway beta environment**
 - Package publishes to npm with `beta` tag (for testing)
 - Preview URL posted in PR comments
@@ -307,37 +371,46 @@ git push origin patch/critical-bug
 
 **The process:**
 
-1. Developer creates a feature branch: `dev/my-feature` and pushes
-2. Developer or QA triggers: **Create QA Branch** workflow
-3. Workflow automatically creates: `qa/my-feature`
-4. QA pulls the branch and tests locally/in staging
-5. QA gives approval
+1. Developer creates `dev/my-feature` branch and writes code
+2. Developer self-tests and creates PR: `dev/my-feature` → `qa/my-feature`
+3. QA team reviews the PR, tests the code, and reports bugs
+4. **If bugs found:**
+   - Developer fixes bugs in `dev/my-feature`
+   - Developer updates the same PR (or creates new PR)
+   - QA team re-reviews and retests until approved
+5. **If testing passes:** QA team merges the PR to `qa/my-feature`
+6. QA team creates PR: `qa/my-feature` → `main` for production
+7. Code review by development team
+8. Merge to `main` → production deploy
 
 **Notes:**
-- QA branches mirror dev branches (same code, new branch)
-- Branch names are validated (must be `qa/something`)
-- If you try to create when branch already exists → workflow fails (safe)
+- Developers create PRs proactively from dev to qa branches
+- QA team controls the merge to qa branches after thorough testing
+- Only QA team creates PRs to `main` after qa testing is complete
 
 ### **Release Promotion Flow (Dev → QA → Prod)**
 
-**The 4-step flow:**
+**The 6-step flow:**
 
 ```
-Step 1           Step 2              Step 3              Step 4
-Dev Branch       Create QA Branch    Create Beta PR      Merge PR to Prod
-dev/feature  →   qa/feature       →  PR to main       →  main (AUTO DEPLOY)
+Step 1           Step 2              Step 3              Step 4              Step 5              Step 6
+Dev Branch       Create PR Dev→QA    QA Testing          Bug Fixes          QA Approval        Create Beta PR
+dev/feature  →   PR dev→qa        →  QA tests        →  Update PR       →  QA merges       →  PR qa→main
 ```
 
 **Detailed steps:**
 
-| Step | Action | What Runs | Output |
-|------|--------|-----------|--------|
-| 1 | Push to `dev/feature` | CI checks | Pass/Fail messages |
-| 2 | Run "Create QA Branch" workflow | Automatically creates `qa/feature` | QA branch ready |
-| 3 | Run "Create Beta Release PR" workflow | Auto-creates PR from `qa/feature` → `main` | PR with preview URL |
-| 4 | Merge the PR | Beta deploy + final CI checks | Production deploy ✅ |
+| Step | Action | Who Does It | What Runs | Output |
+|------|--------|-------------|-----------|--------|
+| 1 | Push to `dev/feature` | Developer | CI checks | Pass/Fail messages |
+| 2 | Create PR `dev/feature` → `qa/feature` | Developer | CI checks on PR | PR ready for review |
+| 3 | Review & test PR | QA Team | Manual testing | Bug reports or approval |
+| 4 | Fix bugs, update PR | Developer | CI checks on PR | Updated PR |
+| 5 | Approve & merge PR to `qa/feature` | QA Team | CI checks | QA branch updated |
+| 6 | Run "Create Beta Release PR" | QA Team | Auto-creates PR to `main` | PR with preview URL |
+| 7 | Code review + merge PR | Dev Team | Beta deploy + final CI checks | Production deploy ✅ |
 
-**Key point:** Each step is automatic—just click "Run workflow" and it handles the rest.
+**Key point:** QA team controls the testing and release process. Developers provide fixes but don't create production PRs directly.
 
 ---
 
@@ -360,7 +433,7 @@ In GitHub UI → **Actions** tab → Select workflow → **Run workflow**
 
 | Workflow | When to Use | What It Does |
 |----------|------------|--------------|
-| Create QA Branch | After pushing to `dev/*` | Creates `qa/*` automatically |
+| Create QA Branch | After pushing to `dev/*` | Creates `qa/*` from `dev/*`, and opens a QA review PR when changes exist |
 | Create Beta Release PR | After pushing to `qa/*` | Creates PR to `main` automatically |
 
 ---
@@ -428,27 +501,39 @@ This prevents mistakes like creating `QA/my-feature` instead of `qa/my-feature`.
 ```
 ┌─ Developer creates feature branch
 │
-├─ dev/my-feature
+├─ dev/login-feature
 │  (push)
 │  ↓
 │  ✅ CI checks run
 │  (lint, test, build)
 │
-├─ Ready? Run "Create QA Branch"
+├─ Developer creates PR: dev/login-feature → qa/login-feature
 │  ↓
-│  qa/my-feature
-│  ✅ CI checks run
+│  Pull Request created
+│  ✅ CI checks run on PR
 │
-├─ QA tests it...
-│
-├─ Ready for production? Run "Create Beta Release PR"
+├─ QA team reviews and tests
 │  ↓
-│  Pull Request: qa/my-feature → main
+│  🐛 Bugs found?
+│     ├─ YES → Developer fixes in dev/login-feature
+│     │         ↓
+│     │         Update PR with fixes
+│     │         ↓
+│     │         QA re-reviews and retests
+│     └─ NO → Continue
+│
+├─ QA testing passes
+│  ↓
+│  QA merges PR → qa/login-feature updated
+│
+├─ QA creates PR: qa/login-feature → main
+│  ↓
+│  Pull Request: qa/login-feature → main
 │  ✅ CI checks run
 │  ✅ Preview deployed at staging URL
 │  ✅ Beta packages published to npm
 │
-├─ Review PR and test staging...
+├─ Code review by dev team + test staging...
 │
 ├─ Ready to go live? Merge the PR
 │  ↓
@@ -463,10 +548,11 @@ This prevents mistakes like creating `QA/my-feature` instead of `qa/my-feature`.
 
 ### **Time Estimate**
 
-- Dev branch → QA branch: 1-2 minutes (automatic)
-- QA testing: Hours or days (depends on complexity)
-- QA → Beta PR: 1-2 minutes (automatic)
-- Staging tests: 5-30 minutes (team tests)
+- Dev branch creation + PR: 30 minutes - 2 hours (developer work)
+- QA review + testing: 1-4 hours (depends on complexity)
+- Bug fixes: 30 minutes - few hours (dev fixes + QA retest cycles)
+- QA → Beta PR: 1-2 minutes (QA team action)
+- Code review + staging tests: 5-30 minutes (dev team)
 - Merge to prod: 3-5 minutes (automatic deploy)
 
 ---
@@ -533,7 +619,7 @@ Check progress in the **Actions** tab.
 
 ### **Developer: Adding a New Feature**
 
-**Step 1: Create a dev branch**
+**Step 1: Create a dev branch and write code**
 ```bash
 git checkout -b dev/my-cool-feature
 # Make your changes
@@ -542,121 +628,130 @@ git commit -m "feat: add cool feature"
 git push origin dev/my-cool-feature
 ```
 
-**Step 2: Check that tests pass**
-- Go to GitHub → Actions tab
-- Find your branch in the list
-- Wait for CI to complete
-- ✅ Green = Ready to promote
-- ❌ Red = Fix the errors
+**Step 2: Self-test and create PR to QA**
+- Test your code locally
+- Create PR: `dev/my-cool-feature` → `qa/my-cool-feature`
+- Wait for QA team review
 
-**Step 3: Share for QA testing**
-- Tell your team: "dev/my-cool-feature is ready"
-- They'll run "Create QA Branch" workflow
+**Step 3: Fix bugs reported by QA**
+- QA team will review and test your PR
+- If bugs found, fix them in your `dev/my-cool-feature` branch
+- Update the same PR with fixes
+- QA team will retest until approved
 
 ---
 
-### **QA: Testing a Feature**
+### **QA Team: Testing a Feature**
 
-**Step 1: Get the QA branch ready**
+**Step 1: Review the developer PR**
+- Go to Pull Requests tab
+- Find the PR from `dev/my-cool-feature` → `qa/my-cool-feature`
+- Review the code changes
 
-Option A (if dev branch already exists):
-- Go to Actions → "Create QA Branch"
-- Enter: `dev/my-cool-feature`
-- Click "Run workflow"
-- Wait 1-2 minutes
-
-Option B (if someone already created the qa branch):
-- Pull it: `git fetch origin && git checkout qa/my-cool-feature`
-
-**Step 2: Test locally**
+**Step 2: Test the feature**
 ```bash
-# Get latest code
-git pull origin qa/my-cool-feature
-# Install deps if needed
-pnpm i
-# Run tests
+# Check out the PR branch
+git fetch origin
+git checkout qa/my-cool-feature
+# Or test via the PR interface
+# Run tests and manual testing
 pnpm test
-# Start dev server if needed
-pnpm dev
+# Manual testing as needed
 ```
 
-**Step 3: Give approval**
-- Comment on the code: "Looks good! Ready for beta." ✅
-- Or: "Found bug: X doesn't work" ❌
+**Step 3: Report bugs or approve**
+- If bugs found: Comment on PR with detailed bug reports
+- Wait for developer to fix and update PR
+- Retest fixes until satisfied
+- When everything works: Approve and merge the PR
 
----
-
-### **Release Manager: Promoting to Production**
-
-**Step 1: Create beta PR for staging**
+**Step 4: Create production PR**
+- After merging to `qa/my-cool-feature`
 - Go to Actions → "Create Beta Release PR"
 - Enter: `qa/my-cool-feature`
 - Click "Run workflow"
 
-**Step 2: Wait for deployment**
-- Check Actions tab
-- Beta workflow will deploy to staging
-- A comment on the PR will have the preview URL
+---
 
-**Step 3: Test in staging**
-- Click the preview URL from the PR comment
-- Test the feature in staging
-- Verify everything works
+### **Dev Team: Code Review and Production Release**
 
-**Step 4: Merge to production**
-- When ready, click "Merge pull request" button
+**Step 1: Review the production PR**
+- Go to Pull Requests tab
+- Find the PR from `qa/my-cool-feature` → `main`
+- Review the code changes thoroughly
+- Check the staging deployment URL in PR comments
+- Test in staging environment
+
+**Step 2: Approve and merge**
+- If everything looks good, approve the PR
+- Click "Merge pull request" button
 - Confirm merge
-- Production workflow starts automatically
-- Check Actions tab for progress
-- 🎉 Live in 3-5 minutes!
+- Production deployment starts automatically
+- 🎉 Feature is live in 3-5 minutes!
 
 ---
 
 ## 15. Non-Confusing Summary: How Everything Fits Together
 
-### **The Big Picture**
-
-Think of your release process like a **quality checkpoint system**:
+### **Example Workflow: login-feature**
 
 ```
-✅ DEV BRANCH
-   ↓ (CI checks)
-✅ QA BRANCH
-   ↓ (manual testing)
-✅ BETA PR (Preview in staging)
-   ↓ (final review)
-✅ MAIN (Production)
-   ↓
-🎉 LIVE
+1. Developer creates: dev/login-feature
+   - Writes code, commits, pushes
+   - Self-tests locally
+   - CI checks pass ✅
+
+2. Developer creates PR: dev/login-feature → qa/login-feature
+   - PR created for QA review
+   - CI checks run on PR
+
+3. QA Team reviews, tests, and reports bugs
+   - Code review + manual testing
+   - Documents any issues found
+
+4. Developer fixes bugs in dev/login-feature
+   - Makes necessary fixes
+   - Updates the same PR
+
+5. Developer updates same PR (or new PR if needed)
+   - Pushes fixes to dev/login-feature
+   - PR gets updated automatically
+
+6. QA Team retests until approved
+   - Reviews fixes and retests
+   - Approves when everything works
+
+7. QA Team merges qa/login-feature
+   - Merges the approved PR
+   - qa/login-feature now has tested code
+
+8. QA Team creates PR: qa/login-feature → main
+   - Uses "Create Beta Release PR" workflow
+
+9. Dev Lead / Main reviewers approve
+   - Code review by development team
+   - Tests staging environment
+
+10. Merge to production
+    - PR merged to main
+    - Automatic production deployment ✅
 ```
-
-**Each checkpoint:**
-1. Automatically runs tests
-2. Waits for human approval
-3. Moves to next step
-
-**If any step fails:**
-- Error message appears in GitHub UI
-- Developer fixes it
-- Re-run the workflow
-- Continue
 
 ### **Who Does What**
 
 | Role | Their Tasks |
 |------|---|
-| **Developer** | Create `dev/*` branches, write code, commit |
-| **QA** | Run "Create QA Branch" workflow, test on `qa/*` |
-| **Release Mgr** | Run "Create Beta Release PR", merge to main |
+| **Developer** | Create `dev/*` branches, write code, self-test, create PRs to `qa/*` branches, fix bugs |
+| **QA Team** | Review PRs to `qa/*` branches, test code, report bugs, approve/merge PRs to `qa/*`, create PRs to `main` |
+| **Dev Team** | Code review PRs to `main`, merge approved PRs |
 | **GitHub Actions** | Run CI, deploy, publish packages (automatic) |
 
-### **The Three Commands You Need to Know**
+### **The Key Workflows You Need to Know**
 
-1. **Create QA Branch**: `dev/feature` → `qa/feature`
-2. **Create Beta Release PR**: `qa/feature` → PR to main
-3. **Merge PR**: Triggers production deploy
-
-That's it! Everything else is automatic.
+1. **Create PR**: Developer creates PR from `dev/feature` → `qa/feature`
+2. **Create Beta Release PR**: QA team creates PR from `qa/feature` → `main`
+3. **Bug Fix Updates**: Developer updates existing PR with fixes
+4. **Merge PR**: QA team merges approved PRs to `qa/*`, Dev team merges to `main`
 
 ### **When in Doubt**
 

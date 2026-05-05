@@ -98,22 +98,68 @@ jobs:
       # -------------------------------------
       # DEV -> QA
       # -------------------------------------
-      - name: Create QA Branch
+      - name: Create QA Branch and PR
         if: inputs.target_type == 'qa'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
           SOURCE="${{ inputs.source_branch }}"
           TARGET="qa/${SOURCE#dev/}"
 
-          if git ls-remote --exit-code --heads origin "$TARGET" >/dev/null; then
+          if ! git ls-remote --exit-code --heads origin "$TARGET" >/dev/null; then
+            git fetch origin "$SOURCE"
+            git checkout -b "$TARGET" "origin/$SOURCE"
+            git push origin "$TARGET"
+            echo "Created QA branch: $TARGET"
+          else
             echo "QA branch already exists: $TARGET"
-            exit 1
           fi
 
+          # If the dev branch has new changes relative to the QA branch, open a PR.
+          # If the QA branch is identical to dev, do not create an empty pull request.
+          git fetch origin "$TARGET"
           git fetch origin "$SOURCE"
-          git checkout -b "$TARGET" "origin/$SOURCE"
-          git push origin "$TARGET"
+          BASE_COMMIT=$(git rev-parse "origin/$TARGET")
+          HEAD_COMMIT=$(git rev-parse "origin/$SOURCE")
+
+          if [ "$BASE_COMMIT" = "$HEAD_COMMIT" ]; then
+            echo "No diff between $SOURCE and $TARGET, skipping PR creation."
+            exit 0
+          fi
+
+          EXISTING_PR=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --base "$TARGET" \
+            --head "$SOURCE" \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR already exists: #$EXISTING_PR"
+            exit 0
+          fi
+
+          PR_BODY="$(cat <<'EOF'
+          ### QA Review Request
+
+          This pull request was auto-generated to promote changes from the developer branch:
+
+          - **Source Branch:** $SOURCE
+          - **Target Branch:** $TARGET
+
+          QA can review the diff, test the changes, and approve merge into the QA branch.
+          EOF
+          )"
+
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --base "$TARGET" \
+            --head "$SOURCE" \
+            --title "QA Review: $SOURCE → $TARGET" \
+            --body "$PR_BODY"
 
       # -------------------------------------
       # QA -> BETA
@@ -121,7 +167,7 @@ jobs:
       - name: Create Beta PR
         if: inputs.target_type == 'beta'
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
