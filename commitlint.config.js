@@ -96,16 +96,19 @@ export default {
       scope: {
         description: "Select monorepo scope",
         enum: {
-          api: "Backend / API services",
-          web: "Frontend / Web app",
           cli: "CLI tooling",
           core: "Core shared logic",
           docs: "Documentation",
           release: "Release system",
           ci: "CI/CD",
+          monorepo: "Workspace-wide",
           deps: "Dependencies",
           shared: "Shared packages",
-          monorepo: "Workspace-wide",
+          api: "Backend / API services",
+          web: "Frontend / Web app",
+          "eslint-config": "ESlint Config Package",
+          "typescript-config": "Typescript Config Package",
+          ui: "UI components Package",
         },
       },
 
@@ -141,7 +144,7 @@ export default {
     "scope-empty": [2, "never"],
     "scope-case": [2, "always", "lower-case"],
 
-    "scope-enum": [2, "always", ["api", "web", "cli", "core", "docs", "release", "ci", "deps", "shared", "monorepo"]],
+    "scope-enum": [2, "always", ["cli", "core", "docs", "release", "ci", "monorepo", "deps", "shared",  "api", "web", "eslint-config", "typescript-config", "ui"]],
 
     // -------------------------
     // SUBJECT

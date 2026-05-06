@@ -66,17 +66,19 @@ Any other type is INVALID
 
 # 📦 4. Allowed Scopes (Monorepo)
 
-- api
-- web
 - cli
 - core
 - docs
 - release
 - ci
+- monorepo
 - deps
 - shared
-- monorepo
-
+- api
+- web
+- eslint-config
+- typescript-config
+- ui
 ---
 
 # 📏 5. Subject Rules
