@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-05-18
+
+### 🐛 Fixes
+
+- **config:** Correct eslint source fixAll configuration (94e63bd)
+
+### 🔧 Refactoring
+
+- **release:** Remove deprecated github remote configuration from cliff config (0055885)
+
+
 ## [1.2.0] - 2026-05-06
 
 ### 🆕 Features
