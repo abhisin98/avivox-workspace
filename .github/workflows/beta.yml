@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup # Executes setup scripts for dependencies.
         uses: ./.github/actions/setup
@@ -45,24 +45,25 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write # required for PR comments
+      pull-requests: write # Required for PR comment posting
     steps:
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@v3
+      - name: Setup Github App
+        id: github-app
+        if: ${{ secrets.APP_CLIENT_ID && secrets.APP_PRIVATE_KEY }}
+        uses: abhisin98/avivox-action-setup-github-app@v1
         with:
-          client-id: ${{ secrets.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.github-app.outputs.app-token || github.token }}
           fetch-depth: 0
 
       - name: Deploy (Staging)
         id: deploy
-        uses: ./.github/actions/railway-deploy
+        uses: abhisin98/avivox-action-railway-deploy@v1
         with:
           api-token: ${{ env.RAILWAY_API_TOKEN }}
           project-id: ${{ env.RAILWAY_PROJECT_ID }}
@@ -71,7 +72,7 @@ jobs:
 
           preview: "true"
           pr-number: ${{ github.event.pull_request.number }}
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ steps.github-app.outputs.app-token || github.token }}
 
       - name: Deployment Info
         run: |
@@ -82,38 +83,42 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     permissions:
-      contents: write # required for tags + releases
-      pull-requests: write # required for PR comments
+      contents: read
+      pull-requests: write # Required for PR comment posting
     steps:
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@v3
+      - name: Setup Github App
+        id: github-app
+        if: ${{ secrets.APP_CLIENT_ID && secrets.APP_PRIVATE_KEY }}
+        uses: abhisin98/avivox-action-setup-github-app@v1
         with:
-          client-id: ${{ secrets.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.github-app.outputs.app-token || github.token }}
           fetch-depth: 0 # Fetch full history for git-cliff
 
       - name: Setup # Executes setup scripts for dependencies.
         uses: ./.github/actions/setup
 
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
+
       - name: Configure npm
         run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
 
       - name: Publish Packages (Staging)
-        uses: ./.github/actions/changelogs
+        uses: abhisin98/avivox-action-changelogs-and-package-releases@v1
         with:
           release-type: beta
           pr-number: ${{ github.event.pull_request.number }}
           head-sha: ${{ github.event.pull_request.head.sha }}
-          do-git: "false" # beta releases don't commit or tag
+          commit-and-push: "false" # beta releases don't commit or tag
           create-release: "false" # beta releases don't create GitHub releases
-          do-publish: "true"
-          publish-tool: "pnpm"
-          publish-access: "public"
-          publish-tag: "beta"
-          github-token: ${{ steps.app-token.outputs.token }}
+          publish-packages: "true"
+          package-manager: "pnpm"
+          package-access: "public"
+          publish-package-tag: "beta"
+          github-token: ${{ steps.github-app.outputs.app-token || github.token }}

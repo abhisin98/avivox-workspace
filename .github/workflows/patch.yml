@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup # Executes setup scripts for dependencies.
         uses: ./.github/actions/setup
@@ -41,11 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Deploy Hotfix (Production)
         id: deploy
-        uses: ./.github/actions/railway-deploy
+        uses: abhisin98/avivox-action-railway-deploy@v1
         with:
           api-token: ${{ env.RAILWAY_API_TOKEN }}
           project-id: ${{ env.RAILWAY_PROJECT_ID }}
@@ -60,25 +60,40 @@ jobs:
     name: Publish Packages (Patch)
     needs: ci
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+      - name: Setup Github App
+        id: github-app
+        if: ${{ secrets.APP_CLIENT_ID && secrets.APP_PRIVATE_KEY }}
+        uses: abhisin98/avivox-action-setup-github-app@v1
         with:
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          token: ${{ steps.github-app.outputs.app-token || github.token }}
           fetch-depth: 0 # Fetch full history for git-cliff
 
       - name: Setup # Executes setup scripts for dependencies.
         uses: ./.github/actions/setup
 
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
+
       - name: Configure npm
         run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
 
       - name: Publish Hotfix (Production)
-        uses: ./.github/actions/changelogs
+        uses: abhisin98/avivox-action-changelogs-and-package-releases@v1
         with:
           release-type: patch
-          do-git: "false" # patch releases don't commit (already done in main)
+          commit-and-push: "false" # patch releases don't commit (already done in main)
           create-release: "false" # patch releases don't create GitHub releases
-          do-publish: "true"
-          publish-tool: "pnpm"
-          publish-access: "public"
-          publish-tag: "latest"
+          publish-packages: "true"
+          package-manager: "pnpm"
+          package-access: "public"
+          publish-package-tag: "latest"
+          github-token: ${{ steps.github-app.outputs.app-token || github.token }}

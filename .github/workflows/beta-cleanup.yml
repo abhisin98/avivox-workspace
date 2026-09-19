@@ -29,10 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Cleanup PR Environment (Staging)
-        uses: ./.github/actions/railway-deploy
+        uses: abhisin98/avivox-action-railway-deploy@v1
         with:
           api-token: ${{ env.RAILWAY_API_TOKEN }}
           project-id: ${{ env.RAILWAY_PROJECT_ID }}
@@ -48,13 +48,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup # Executes setup scripts for dependencies.
         uses: ./.github/actions/setup
-
-      - name: Configure npm
-        run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
 
       - name: Unpublish beta packages
         run: echo "Hello World"
