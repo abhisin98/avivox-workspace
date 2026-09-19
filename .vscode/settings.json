@@ -29,7 +29,7 @@
   ],
   "github.copilot.chat.commitMessageGeneration.instructions": [
     {
-      "file": "commit-message-guidelines.md",
+      "file": "docs/COMMIT-GUIDELINES.md"
     }
-  ],
+  ]
 }

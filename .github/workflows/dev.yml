@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup # Executes setup scripts for dependencies.
         uses: ./.github/actions/setup

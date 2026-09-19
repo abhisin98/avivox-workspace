@@ -8,15 +8,31 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   promote-to-beta:
-    uses: ./.github/workflows/_promotion-engine.yml
-    with:
-      source_branch: ${{ github.event.inputs.qa_branch }}
-      target_type: beta
-      use_github_app: true
-    secrets: inherit
+    name: Promote To Beta
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Setup Github App
+        id: github-app
+        if: ${{ secrets.APP_CLIENT_ID && secrets.APP_PRIVATE_KEY }}
+        uses: abhisin98/avivox-action-setup-github-app@v1
+        with:
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          token: ${{ steps.github-app.outputs.app-token || github.token }}
+          fetch-depth: 0 # Fetch full history
+
+      - name: Promote Branch
+        uses: abhisin98/avivox-action-promotion-engine@v1
+        with:
+          source-branch-name: ${{ github.event.inputs.qa_branch }}
+          promotion-target: beta
+          github-token: ${{ steps.github-app.outputs.app-token || github.token }}

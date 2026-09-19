@@ -169,5 +169,5 @@ export default {
   // -----------------------------------
   // HELP URL
   // -----------------------------------
-  helpUrl: "https://github.com/abhisin98/avivox-workspace/blob/main/commit-message-guidelines.md",
+  helpUrl: "https://github.com/abhisin98/avivox-workspace/blob/main/docs/COMMIT-GUIDELINES.md",
 };

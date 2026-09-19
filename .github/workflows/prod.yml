@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup # Executes setup scripts for dependencies.
         uses: ./.github/actions/setup
@@ -44,11 +44,11 @@ jobs:
       url: ${{ steps.deploy.outputs.url }} # Stores the deployment URL dynamically
     steps:
       - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Deploy (Production)
         id: deploy
-        uses: ./.github/actions/railway-deploy
+        uses: abhisin98/avivox-action-railway-deploy@v1
         with:
           api-token: ${{ env.RAILWAY_API_TOKEN }}
           project-id: ${{ env.RAILWAY_PROJECT_ID }}
@@ -64,44 +64,40 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     permissions:
-      contents: write # required for git commits, tags, and GitHub releases
+      contents: write # Required for git commits, tags, and GitHub releases
     steps:
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@v3
+      - name: Setup Github App
+        id: github-app
+        if: ${{ secrets.APP_CLIENT_ID && secrets.APP_PRIVATE_KEY }}
+        uses: abhisin98/avivox-action-setup-github-app@v1
         with:
-          client-id: ${{ secrets.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
-      - name: Check out code # Fetches the latest code from the repository.
-        uses: actions/checkout@v6
+      - name: Check out code
+        uses: actions/checkout@v7
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.github-app.outputs.app-token || github.token }}
           fetch-depth: 0 # Fetch full history for git-cliff
-
-      - name: Get GitHub App User ID
-        id: get-user-id
-        if: ${{ steps.app-token.outputs.token != '' }}
-        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Setup # Executes setup scripts for dependencies.
         uses: ./.github/actions/setup
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
 
       - name: Configure npm
         run: npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
 
       - name: Publish Packages (Production)
-        uses: ./.github/actions/changelogs
+        uses: abhisin98/avivox-action-changelogs-and-package-releases@v1
         with:
           release-type: auto
-          do-git: "true"
+          commit-and-push: "true"
           create-release: "true"
-          github-token: ${{ steps.app-token.outputs.token }}
-          git-user-name: "${{ steps.app-token.outputs.app-slug }}[bot]"
-          git-user-email: "${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com"
-          do-publish: "true"
-          publish-tool: "pnpm"
-          publish-access: "public"
-          publish-tag: "latest"
+          publish-packages:  "true"
+          package-manager: "pnpm"
+          package-access:  "public"
+          publish-package-tag: "latest"
+          github-token: ${{ steps.github-app.outputs.app-token || github.token }}
+          
