@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2026-09-21
+
+### 🔄 CI/CD
+
+- **ci:** Update workflows to use environment variables for GitHub App credentials (99d20b0)
+
+### 🧹 Chores
+
+- **monorepo:** Reorganize repository documentation and workflows (9e825df)
+
+
 ## [1.2.1] - 2026-05-18
 
 ### 🐛 Fixes
