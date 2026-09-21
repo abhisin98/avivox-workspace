@@ -10,6 +10,8 @@ env:
   RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }} # service ID to inject database variable into
   # RAILWAY_WORKSPACE_ID: ${{ secrets.RAILWAY_WORKSPACE_ID }} # if you are linking to a project in a workspace, uncomment this
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # npm registry token for publishing packages
+  APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+  APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
 concurrency:
   # Ensures only one workflow run per branch/event group at a time
@@ -49,11 +51,11 @@ jobs:
     steps:
       - name: Setup Github App
         id: github-app
-        if: ${{ secrets.APP_CLIENT_ID && secrets.APP_PRIVATE_KEY }}
+        if: ${{ env.APP_CLIENT_ID && env.APP_PRIVATE_KEY }}
         uses: abhisin98/avivox-action-setup-github-app@v1
         with:
-          app-client-id: ${{ secrets.APP_CLIENT_ID }}
-          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-client-id: ${{ env.APP_CLIENT_ID }}
+          app-private-key: ${{ env.APP_PRIVATE_KEY }}
 
       - name: Check out code # Fetches the latest code from the repository.
         uses: actions/checkout@v7
@@ -88,11 +90,11 @@ jobs:
     steps:
       - name: Setup Github App
         id: github-app
-        if: ${{ secrets.APP_CLIENT_ID && secrets.APP_PRIVATE_KEY }}
+        if: ${{ env.APP_CLIENT_ID && env.APP_PRIVATE_KEY }}
         uses: abhisin98/avivox-action-setup-github-app@v1
         with:
-          app-client-id: ${{ secrets.APP_CLIENT_ID }}
-          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-client-id: ${{ env.APP_CLIENT_ID }}
+          app-private-key: ${{ env.APP_PRIVATE_KEY }}
 
       - name: Check out code # Fetches the latest code from the repository.
         uses: actions/checkout@v7
